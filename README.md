@@ -17,11 +17,12 @@ global_server_port 5199
 ```
 6. Enjoy! Start the game with `Thief2MP.exe`. Windows might prompt you to install [DirectPlay](https://en.wikipedia.org/wiki/DirectPlay) on first launch.
     - Select `Multiplayer` and then `View Server List` to see all running game servers.
-    - Host your own game with `Host a game` (UDP port `5198`). You will show up in the server list **if clients can ping you** (firewall, NAT ...).
+    - Host your own game with `Host a game` (UDP port `5198`). You will show up in the server list **if clients can ping you** (firewall, NAT, IPv4-only ...).
 
 ## How to setup your own NewDarkGlobalServer
 1. Download [the latest release](https://github.com/sungaila/NewDarkGlobalServer/releases)
 2. Launch `NewDarkGlobalServer.exe`
     - Default TCP port is `5199`
     - You can change that port with the command line argument `-port=YOURNUMBER`
+    - IPv4 is the only supported protocol
 3. Make sure all your clients have updated their `dark_net.cfg` file with your name and port
