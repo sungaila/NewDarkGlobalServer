@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="utf-8"?>
+<Project ToolsVersion="4.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <!-- Code sign assemblies -->
+  <Target Name="CodeSignAssembliesBuild" AfterTargets="PostBuildEvent" Condition="'$(Configuration)'=='ReleaseSigned'">
+    <Exec Command="cd $(OutDir)&#xD;&#xA;for /f &quot;delims=|&quot; %%a in ('dir /s /b *.dll *.exe') do &quot;$(SignToolPath)signtool.exe&quot; sign /n &quot;$(SignSubjectName)&quot; /t &quot;$(SignTimestampServerUrl)&quot; /fd certHash ^&quot;%%a^&quot;" />
+  </Target>
+
+  <Target Name="CodeSignAssembliesPublish" AfterTargets="Publish" Condition="'$(Configuration)'=='ReleaseSigned'">
+    <Exec Command="cd $(PublishDir)&#xD;&#xA;for /f &quot;delims=|&quot; %%a in ('dir /s /b *.dll *.exe') do &quot;$(SignToolPath)signtool.exe&quot; sign /n &quot;$(SignSubjectName)&quot; /t &quot;$(SignTimestampServerUrl)&quot; /fd certHash ^&quot;%%a^&quot;" />
+  </Target>
+</Project>
