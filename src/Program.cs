@@ -318,6 +318,8 @@ namespace NewDarkGlobalServer
         {
             try
             {
+                await Task.Delay(TimeSpan.FromSeconds(1), cancellationToken);
+
                 while (socket.Connected)
                 {
                     cancellationToken.ThrowIfCancellationRequested();
