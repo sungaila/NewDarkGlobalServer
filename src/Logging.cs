@@ -2,7 +2,7 @@
 using System.Collections.Generic;
 using System.Linq;
 using static NewDarkGlobalServer.Messages;
-using static NewDarkGlobalServer.Program;
+using static NewDarkGlobalServer.States;
 
 namespace NewDarkGlobalServer
 {

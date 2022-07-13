@@ -104,7 +104,7 @@ namespace NewDarkGlobalServer
         {
             public MessageType Type => MessageType.ListRequest;
 
-            public ListRequestMessage(byte[] input) : this()
+            public ListRequestMessage(byte[] input) : this((ushort)default)
             {
                 var type = (MessageType)input[0..2].ShortToHostOrder();
 

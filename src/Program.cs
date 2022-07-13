@@ -1,155 +1,18 @@
 ﻿using System;
-using System.Collections.Generic;
 using System.Linq;
 using System.Net;
 using System.Net.Sockets;
 using System.Threading;
 using System.Threading.Tasks;
-using static NewDarkGlobalServer.Messages;
 using static NewDarkGlobalServer.Logging;
-using System.Collections.Concurrent;
+using static NewDarkGlobalServer.Messages;
+using static NewDarkGlobalServer.States;
 
 namespace NewDarkGlobalServer
 {
-    public static class Program
+    public static partial class Program
     {
-        /// <summary>
-        /// The expected maximum message size.
-        /// </summary>
-        const int NetworkBufferSize = 256;
-
-        /// <summary>
-        /// The supported protocol version.
-        /// </summary>
-        const ushort SupportedProtocolVersion = 1100;
-
-        /// <summary>
-        /// The port the global server uses.
-        /// </summary>
-        static int Port = 5199;
-
-        /// <summary>
-        /// The timeout for connections have not sent requests yet.
-        /// </summary>
-        static TimeSpan UnidentifiedConnectionTimeout = TimeSpan.FromSeconds(10);
-
-        /// <summary>
-        /// The timeout for game servers.
-        /// </summary>
-        static TimeSpan ServerConnectionTimeout = TimeSpan.FromMinutes(3);
-
-        /// <summary>
-        /// The timeout for game clients.
-        /// </summary>
-        static TimeSpan ClientConnectionTimeout = TimeSpan.FromHours(1);
-
-        /// <summary>
-        /// If <see cref="HeartbeatMinimalMessage"/> should not be logged.
-        /// </summary>
-        static bool HideHeartbeatMinimal = false;
-
-        /// <summary>
-        /// The interval for <see cref="HandleCleanupAsync(CancellationToken)"/> to run.
-        /// </summary>
-        static readonly TimeSpan CleanupInterval = TimeSpan.FromSeconds(10);
-
-        /// <summary>
-        /// The state in which a connection was last seen in.
-        /// </summary>
-        public enum ConnectionStatus
-        {
-            /// <summary>
-            /// The connection is closing or closed.
-            /// </summary>
-            Closed = -1,
-
-            /// <summary>
-            /// The connection has not send data yet.
-            /// </summary>
-            NewAndUnidentified = 0,
-
-            /// <summary>
-            /// The connection is a game server.
-            /// </summary>
-            AwaitServerCommand,
-
-            /// <summary>
-            /// The connection is a game client.
-            /// </summary>
-            AwaitClientCommand
-        }
-
-        /// <summary>
-        /// Represents a connection with a game server or client.
-        /// </summary>
-        public class Connection
-        {
-            /// <summary>
-            /// The socket used for this connection.
-            /// </summary>
-            public Socket Socket { get; }
-
-            /// <summary>
-            /// The inital <see cref="Socket.RemoteEndPoint"/> (expected to be an <see cref="IPEndPoint"/>).
-            /// </summary>
-            public IPEndPoint InitialEndPoint { get; }
-
-            /// <summary>
-            /// The task used for handling this connection.
-            /// </summary>
-            public Task? Task { get; set; } = null;
-
-            /// <summary>
-            /// The state in which this connection was last seen in.
-            /// </summary>
-            public ConnectionStatus Status { get; set; }
-
-            /// <summary>
-            /// The time at which this connection was created.
-            /// </summary>
-            public DateTimeOffset Created { get; }
-
-            /// <summary>
-            /// The last time <see cref="Socket.SendAsync"/> or <see cref="Socket.ReceiveAsync"/> had been called for this connection.
-            /// </summary>
-            public DateTimeOffset LastActivity { get; set; }
-
-            /// <summary>
-            /// The last game server sent by this connection.
-            /// This identifies it as a game server and <see cref="Status"/> should be set to <see cref="ConnectionStatus.AwaitServerCommand"/>.
-            /// </summary>
-            public ServerInfo? ServerInfo { get; set; } = null;
-
-            /// <summary>
-            /// If this connection is closing or closed.
-            /// </summary>
-            public bool IsDisconnected => Status == ConnectionStatus.Closed || Socket == null || !Socket.Connected;
-
-            /// <param name="socket">The socket of the accepted connection.</param>
-            /// <exception cref="ArgumentNullException"/>
-            /// <exception cref="ArgumentException">Thrown if <see cref="Socket.RemoteEndPoint"/> is <see langword="null"/> or not an <see cref="IPEndPoint"/>.</exception>
-            public Connection(Socket socket)
-            {
-                if (socket == null)
-                    throw new ArgumentNullException(nameof(socket));
-
-                if (socket.RemoteEndPoint is not IPEndPoint iPEndPoint)
-                    throw new ArgumentException("The RemoteEndPoint is null or not an IPEndPoint.");
-
-                Socket = socket;
-                InitialEndPoint = iPEndPoint;
-                Status = ConnectionStatus.NewAndUnidentified;
-                Created = DateTimeOffset.Now;
-                LastActivity = Created;
-            }
-        }
-
-        /// <summary>
-        /// A thread-safe collection of all connections.
-        /// </summary>
-        static readonly ConcurrentDictionary<string, Connection> _connections = new();
-
-        static bool ParseStartupArgs(string[] args, ref int port, ref TimeSpan timeoutServer, ref TimeSpan timeoutClient, ref TimeSpan timeoutUnidentified, ref bool hideVerbose, ref bool hideHeartbeatMinimal)
+        static bool ParseStartupArgs(string[] args, ref int port, ref TimeSpan timeoutServer, ref TimeSpan timeoutClient, ref TimeSpan timeoutUnidentified, ref bool hideVerbose, ref bool showheartbeatminimal)
         {
             foreach (var arg in args)
             {
@@ -185,16 +48,16 @@ namespace NewDarkGlobalServer
                 {
                     hideVerbose = true;
                 }
-                else if (arg.StartsWith("-hideheartbeatminimal"))
+                else if (arg.StartsWith("-showheartbeatminimal"))
                 {
-                    hideHeartbeatMinimal = true;
+                    showheartbeatminimal = true;
                 }
                 else if (arg.StartsWith("-help"))
                 {
                     Console.WriteLine();
                     Console.WriteLine("Syntax:");
                     Console.WriteLine();
-                    Console.WriteLine("    NewDarkGlobalServer [-port=<n>] [-hideverbose] [-hideheartbeatminimal] [-timeoutserver=<n>] [-timeoutclient=<n>] [-timeoutunidentified=<n>] [-help]");
+                    Console.WriteLine("    NewDarkGlobalServer [-port=<n>] [-hideverbose] [-showheartbeatminimal] [-timeoutserver=<n>] [-timeoutclient=<n>] [-timeoutunidentified=<n>] [-help]");
                     Console.WriteLine();
 
                     Console.WriteLine("Arguments:");
@@ -220,13 +83,14 @@ namespace NewDarkGlobalServer
                     Console.WriteLine("    Hides some of the verbose messages in the log.");
                     Console.WriteLine();
 
-                    Console.WriteLine("-hideheartbeatminimal");
-                    Console.WriteLine("    Hides HeartbeatMinimal messages in the log. Each connected game server sends one per 10 seconds.");
+                    Console.WriteLine("-showheartbeatminimal");
+                    Console.WriteLine("    Shows HeartbeatMinimal messages in the log. Each connected game server sends one every 10 seconds.");
                     Console.WriteLine();
 
                     Console.WriteLine("-help");
                     Console.WriteLine("    Prints this helpful argument list.");
                     Console.WriteLine();
+                    return false;
                 }
                 else
                 {
@@ -250,7 +114,7 @@ namespace NewDarkGlobalServer
                 cts.Cancel();
             };
 
-            if (!ParseStartupArgs(args, ref Port, ref ServerConnectionTimeout, ref ClientConnectionTimeout, ref UnidentifiedConnectionTimeout, ref HideVerbose, ref HideHeartbeatMinimal))
+            if (!ParseStartupArgs(args, ref Port, ref ServerConnectionTimeout, ref ClientConnectionTimeout, ref UnidentifiedConnectionTimeout, ref HideVerbose, ref ShowHeartbeatMinimal))
             {
                 return;
             }
@@ -421,7 +285,7 @@ namespace NewDarkGlobalServer
                                 return;
                             }
 
-                            if (!HideHeartbeatMinimal)
+                            if (ShowHeartbeatMinimal)
                                 LogWriteLine(typeof(HeartbeatMinimalMessage).Name, $"received from {socket.RemoteEndPoint}");
                             break;
 
@@ -622,7 +486,5 @@ namespace NewDarkGlobalServer
             if (wasConnected)
                 ConnectionsWriteLine(_connections.Values);
         }
-
-        static bool IsSocketAlive(Socket socket) => socket != null && socket.Connected && socket.Poll(1000, SelectMode.SelectRead) && socket.Available != 0;
     }
 }
