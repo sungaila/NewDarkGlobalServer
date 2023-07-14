@@ -14,6 +14,11 @@ namespace NewDarkGlobalServer
         public enum ConnectionStatus
         {
             /// <summary>
+            /// The connection failed due to invalid or unknown messages.
+            /// </summary>
+            InvalidMessageType = -2,
+
+            /// <summary>
             /// The connection is closing or closed.
             /// </summary>
             Closed = -1,
@@ -39,6 +44,11 @@ namespace NewDarkGlobalServer
         /// </summary>
         public class Connection
         {
+            /// <summary>
+            /// An identifier for internal use.
+            /// </summary>
+            public Guid Id { get; } = Guid.NewGuid();
+
             /// <summary>
             /// The socket used for this connection.
             /// </summary>
@@ -85,8 +95,7 @@ namespace NewDarkGlobalServer
             /// <exception cref="ArgumentException">Thrown if <see cref="Socket.RemoteEndPoint"/> is <see langword="null"/> or not an <see cref="IPEndPoint"/>.</exception>
             public Connection(Socket socket)
             {
-                if (socket == null)
-                    throw new ArgumentNullException(nameof(socket));
+                ArgumentNullException.ThrowIfNull(socket);
 
                 if (socket.RemoteEndPoint is not IPEndPoint iPEndPoint)
                     throw new ArgumentException("The RemoteEndPoint is null or not an IPEndPoint.");

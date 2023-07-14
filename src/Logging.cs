@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Linq;
 using static NewDarkGlobalServer.Messages;
@@ -9,11 +10,15 @@ namespace NewDarkGlobalServer
     internal class Logging
     {
         /// <summary>
-        /// If verbose messages should not be logged.
+        /// If verbose messages should be logged.
         /// </summary>
-        public static bool HideVerbose = false;
+        public static bool Verbose = false;
 
         static readonly object _logWriteLineLock = new();
+
+        private readonly record struct DelayedWriteLine(DateTime Timestamp, string PrimayMessage, string SecondaryMessage, string? Verbose);
+
+        static readonly ConcurrentDictionary<Guid, List<DelayedWriteLine>> _delayedWriteLines = new();
 
         public static void LogWriteLine(string message)
         {
@@ -26,35 +31,82 @@ namespace NewDarkGlobalServer
             }
         }
 
-        public static void LogWriteLine(string primayMessage, string secondaryMessage, string? verbose = null)
+        public static void LogWriteLineDelayed(Guid guid, string primayMessage, string secondaryMessage, string? verbose = null)
+        {
+            if (guid == default)
+                return;
+
+            var newEntry = new DelayedWriteLine(DateTime.Now, primayMessage, secondaryMessage, verbose);
+
+            if (_delayedWriteLines.TryGetValue(guid, out var delayedWriteLines))
+            {
+                delayedWriteLines.Add(newEntry);
+            }
+            else
+            {
+                _delayedWriteLines.TryAdd(guid, new List<DelayedWriteLine> { newEntry });
+            }
+        }
+
+        private static void FlushDelayed(Guid guid)
+        {
+            if (guid == default)
+                return;
+
+            if (!_delayedWriteLines.TryGetValue(guid, out var delayedWriteLines))
+                return;
+
+            foreach (var line in delayedWriteLines)
+            {
+                LogWriteLineInternal(line.Timestamp, line.PrimayMessage, line.SecondaryMessage, line.Verbose);
+            }
+
+            CleanDelayed(guid);
+        }
+
+        public static void CleanDelayed(Guid guid)
+        {
+            if (guid == default)
+                return;
+
+            _delayedWriteLines.TryRemove(guid, out _);
+        }
+
+        public static void LogWriteLine(Guid guid, string primayMessage, string secondaryMessage, string? verbose = null)
         {
             lock (_logWriteLineLock)
             {
-                Console.ForegroundColor = ConsoleColor.DarkGray;
-                Console.Write($"[{DateTime.Now}] ");
-                Console.ResetColor();
+                FlushDelayed(guid);
+                LogWriteLineInternal(DateTime.Now, primayMessage, secondaryMessage, verbose);
+            }
+        }
 
-                if (secondaryMessage == null)
+        private static void LogWriteLineInternal(DateTime timestamp, string primayMessage, string secondaryMessage, string? verbose = null)
+        {
+            Console.ForegroundColor = ConsoleColor.DarkGray;
+            Console.Write($"[{timestamp}] ");
+            Console.ResetColor();
+
+            if (secondaryMessage == null)
+            {
+                Console.WriteLine(primayMessage);
+            }
+            else
+            {
+                Console.Write($"{primayMessage} ");
+                Console.ForegroundColor = ConsoleColor.DarkGray;
+
+                if (verbose == null || !Verbose)
                 {
-                    Console.WriteLine(primayMessage);
+                    Console.WriteLine($"{secondaryMessage}");
                 }
                 else
                 {
-                    Console.Write($"{primayMessage} ");
-                    Console.ForegroundColor = ConsoleColor.DarkGray;
-
-                    if (verbose == null || HideVerbose)
-                    {
-                        Console.WriteLine($"{secondaryMessage}");
-                    }
-                    else
-                    {
-                        Console.Write($"{secondaryMessage} ");
-                        Console.WriteLine(verbose);
-                    }
-
-                    Console.ResetColor();
+                    Console.Write($"{secondaryMessage} ");
+                    Console.WriteLine(verbose);
                 }
+
+                Console.ResetColor();
             }
         }
 
@@ -71,18 +123,20 @@ namespace NewDarkGlobalServer
                 Console.ForegroundColor = ConsoleColor.DarkGray;
                 Console.Write($"[{DateTime.Now}] ");
                 Console.ForegroundColor = ConsoleColor.Blue;
-                Console.Write($"{conenctionCount} connection{(conenctionCount != 1 ? "s" : string.Empty)} open ");
+                Console.Write($"{conenctionCount} open connection{(conenctionCount != 1 ? "s" : string.Empty)} ");
                 Console.ForegroundColor = ConsoleColor.DarkGray;
                 Console.WriteLine($"({serverOpenCount} open server{(serverOpenCount != 1 ? "s" : string.Empty)}, {serverClosedCount} closed server{(serverClosedCount != 1 ? "s" : string.Empty)}, {clientCount} client{(clientCount != 1 ? "s" : string.Empty)})");
                 Console.ResetColor();
             }
         }
 
-        public static void ErrorWriteLine(string primayMessage, string? secondaryMessage = null)
+        public static void ErrorWriteLine(Guid guid, string primayMessage, string? secondaryMessage = null)
         {
             lock (_logWriteLineLock)
             {
-                Console.ForegroundColor= ConsoleColor.DarkGray;
+                FlushDelayed(guid);
+
+                Console.ForegroundColor = ConsoleColor.DarkGray;
                 Console.Write($"[{DateTime.Now}] ");
                 Console.ResetColor();
 

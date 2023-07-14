@@ -1,4 +1,6 @@
-﻿using System;
+﻿using Mono.Options;
+using System;
+using System.Globalization;
 using System.Linq;
 using System.Net;
 using System.Net.Sockets;
@@ -12,99 +14,44 @@ namespace NewDarkGlobalServer
 {
     public static partial class Program
     {
-        static bool ParseStartupArgs(string[] args, ref int port, ref TimeSpan timeoutServer, ref TimeSpan timeoutClient, ref TimeSpan timeoutUnidentified, ref bool hideVerbose, ref bool showheartbeatminimal)
-        {
-            foreach (var arg in args)
-            {
-                if (arg.StartsWith("-port="))
-                {
-                    if (int.TryParse(arg["-port=".Length..], out var number))
-                    {
-                        port = number;
-                    }
-                }
-                else if (arg.StartsWith("-timeoutserver="))
-                {
-                    if (int.TryParse(arg["-timeoutserver=".Length..], out var seconds))
-                    {
-                        timeoutServer = TimeSpan.FromSeconds(seconds);
-                    }
-                }
-                else if (arg.StartsWith("-timeoutclient="))
-                {
-                    if (int.TryParse(arg["-timeoutclient=".Length..], out var seconds))
-                    {
-                        timeoutClient = TimeSpan.FromSeconds(seconds);
-                    }
-                }
-                else if (arg.StartsWith("-timeoutunidentified="))
-                {
-                    if (int.TryParse(arg["-timeoutunidentified=".Length..], out var seconds))
-                    {
-                        timeoutUnidentified = TimeSpan.FromSeconds(seconds);
-                    }
-                }
-                else if (arg.StartsWith("-hideverbose"))
-                {
-                    hideVerbose = true;
-                }
-                else if (arg.StartsWith("-showheartbeatminimal"))
-                {
-                    showheartbeatminimal = true;
-                }
-                else if (arg.StartsWith("-help"))
-                {
-                    Console.WriteLine();
-                    Console.WriteLine("Syntax:");
-                    Console.WriteLine();
-                    Console.WriteLine("    NewDarkGlobalServer [-port=<n>] [-hideverbose] [-showheartbeatminimal] [-timeoutserver=<n>] [-timeoutclient=<n>] [-timeoutunidentified=<n>] [-help]");
-                    Console.WriteLine();
-
-                    Console.WriteLine("Arguments:");
-                    Console.WriteLine();
-
-                    Console.WriteLine("-port=<n>");
-                    Console.WriteLine("    Sets the port for this global server. Default is 5199.");
-                    Console.WriteLine();
-
-                    Console.WriteLine("-timeoutserver=<n>");
-                    Console.WriteLine("    Sets timeout for game servers in seconds. Default is 180 (3 minutes).");
-                    Console.WriteLine();
-
-                    Console.WriteLine("-timeoutclient=<n>");
-                    Console.WriteLine("    Sets timeout for game clients in seconds. Default is 3600 (1 hour).");
-                    Console.WriteLine();
-
-                    Console.WriteLine("-timeoutunidentified=<n>");
-                    Console.WriteLine("    Sets timeout for game clients in seconds. Default is 10 (seconds).");
-                    Console.WriteLine();
-
-                    Console.WriteLine("-hideverbose");
-                    Console.WriteLine("    Hides some of the verbose messages in the log.");
-                    Console.WriteLine();
-
-                    Console.WriteLine("-showheartbeatminimal");
-                    Console.WriteLine("    Shows HeartbeatMinimal messages in the log. Each connected game server sends one every 10 seconds.");
-                    Console.WriteLine();
-
-                    Console.WriteLine("-help");
-                    Console.WriteLine("    Prints this helpful argument list.");
-                    Console.WriteLine();
-                    return false;
-                }
-                else
-                {
-                    Console.WriteLine($"Unknown argument {arg}. Use -help for a list of available arguments.");
-                    return false;
-                }
-            }
-
-            return true;
-        }
-
         public static async Task Main(string[] args)
         {
             Console.Title = "Thief 2 Multiplayer Global Server";
+
+            bool showHelp = false;
+
+            var options = new OptionSet {
+                { "p|port=", $"Sets the port for this global server. Default is {Port.ToString(CultureInfo.InvariantCulture)}.", (int p) => Port = p },
+                { "s|timeoutserver=", $"Sets timeout for game servers in seconds. Default is {ServerConnectionTimeout.TotalSeconds.ToString(CultureInfo.InvariantCulture)} seconds ({ServerConnectionTimeout:c}).", (int s) => ServerConnectionTimeout = TimeSpan.FromSeconds(s) },
+                { "c|timeoutclient=", $"Sets timeout for game clients in seconds. Default is {ClientConnectionTimeout.TotalSeconds.ToString(CultureInfo.InvariantCulture)} seconds ({ClientConnectionTimeout:c}).", (int c) => ClientConnectionTimeout = TimeSpan.FromSeconds(c) },
+                { "u|timeoutunidentified=", $"Sets timeout for game clients in seconds. Default is {UnidentifiedConnectionTimeout.TotalSeconds.ToString(CultureInfo.InvariantCulture)} seconds ({UnidentifiedConnectionTimeout:c}).", (int u) => UnidentifiedConnectionTimeout = TimeSpan.FromSeconds(u) },
+                { "b|showheartbeatminimal", "Shows HeartbeatMinimal messages in the log. Each connected game server sends one every 10 seconds so the log may become cluttered.", b => ShowHeartbeatMinimal = b != null },
+                { "f|hidefailedconn", "Hides failed connections attempts (due to invalid or unknown messages) from the log.", f => HideInvalidMessageTypes = f != null },
+                { "v|verbose", "Shows more verbose messages in the log.", v => Verbose = v != null },
+                { "h|help", "Prints this helpful option list and exits.", h => showHelp = h != null },
+            };
+
+            try
+            {
+                options.Parse(args);
+            }
+            catch (OptionException ex)
+            {
+                ErrorWriteLine(default, ex.Message, "Use --help for more information.");
+                throw;
+            }
+
+            if (showHelp)
+            {
+                Console.WriteLine($"Usage: {typeof(Program).Assembly.GetName().Name} [options]");
+                Console.WriteLine("Starts a server providing a game server list for Thief 2 Multiplayer.");
+                Console.WriteLine();
+
+                Console.WriteLine("Options:");
+                options.WriteOptionDescriptions(Console.Out);
+                return;
+            }
+
             Console.WriteLine($"Starting {typeof(Program).Assembly.GetName().Name} {typeof(Program).Assembly.GetName().Version}");
 
             var cts = new CancellationTokenSource();
@@ -113,11 +60,6 @@ namespace NewDarkGlobalServer
                 e.Cancel = true;
                 cts.Cancel();
             };
-
-            if (!ParseStartupArgs(args, ref Port, ref ServerConnectionTimeout, ref ClientConnectionTimeout, ref UnidentifiedConnectionTimeout, ref HideVerbose, ref ShowHeartbeatMinimal))
-            {
-                return;
-            }
 
             var localEndPoint = new IPEndPoint(IPAddress.Any, Port);
 
@@ -132,8 +74,8 @@ namespace NewDarkGlobalServer
             }
             catch (Exception ex)
             {
-                ErrorWriteLine("Failed to bind");
-                ErrorWriteLine(ex.ToString());
+                ErrorWriteLine(default, "Failed to bind");
+                ErrorWriteLine(default, ex.ToString());
                 throw;
             }
 
@@ -155,14 +97,14 @@ namespace NewDarkGlobalServer
                     var newConnection = new Connection(clientSocket);
                     _connections.TryAdd(newConnection.InitialEndPoint.ToString(), newConnection);
 
-                    LogWriteLine("Connection accepted", $"for {clientSocket.RemoteEndPoint}");
+                    LogWriteLineDelayed(newConnection.Id, "Connection accepted", $"for {clientSocket.RemoteEndPoint}");
 
                     newConnection.Task = Task.Factory.StartNew(async () => await HandleConnectionAsync(clientSocket, newConnection, cts.Token), cts.Token, TaskCreationOptions.LongRunning, TaskScheduler.Current);
                 }
                 catch (SocketException ex)
                 {
-                    ErrorWriteLine("Failed to establish connection");
-                    ErrorWriteLine(ex.ToString());
+                    ErrorWriteLine(default, "Failed to establish connection");
+                    ErrorWriteLine(default, ex.ToString());
                 }
                 catch (Exception ex) when (ex is TaskCanceledException || ex is OperationCanceledException)
                 {
@@ -176,6 +118,7 @@ namespace NewDarkGlobalServer
             await Task.WhenAll(_connections.Where(c => c.Value.Task != null).Select(c => c.Value.Task!).ToList());
 
             LogWriteLine("Server stopped.");
+            return;
         }
 
         static async Task HandleConnectionAsync(Socket socket, Connection connection, CancellationToken cancellationToken = default)
@@ -199,16 +142,16 @@ namespace NewDarkGlobalServer
                         case MessageType.ListRequest:
                             if (length != 4)
                             {
-                                ErrorWriteLine($"{typeof(ListRequestMessage).Name} received has an invalid length", $"({socket.RemoteEndPoint})");
+                                ErrorWriteLine(connection.Id, $"{typeof(ListRequestMessage).Name} received has an invalid length", $"({socket.RemoteEndPoint})");
                                 return;
                             }
 
                             if (connection.Status != ConnectionStatus.NewAndUnidentified)
                             {
                                 if (connection.Status == ConnectionStatus.AwaitClientCommand)
-                                    ErrorWriteLine("Game client sent ListRequestMessage more than once", $"({socket.RemoteEndPoint})");
+                                    ErrorWriteLine(connection.Id, "Game client sent ListRequestMessage more than once", $"({socket.RemoteEndPoint})");
                                 else if (connection.Status == ConnectionStatus.AwaitServerCommand)
-                                    ErrorWriteLine("Game server sent ListRequestMessage (message is client only)", $"({socket.RemoteEndPoint})");
+                                    ErrorWriteLine(connection.Id, "Game server sent ListRequestMessage (message is client only)", $"({socket.RemoteEndPoint})");
 
                                 return;
                             }
@@ -216,11 +159,11 @@ namespace NewDarkGlobalServer
                             connection.Status = ConnectionStatus.AwaitClientCommand;
 
                             var listRequest = new ListRequestMessage(buffer);
-                            LogWriteLine(typeof(ListRequestMessage).Name, $"received from {socket.RemoteEndPoint}");
+                            LogWriteLine(connection.Id, typeof(ListRequestMessage).Name, $"received from {socket.RemoteEndPoint}");
 
                             if (listRequest.ProtocolVersion < SupportedProtocolVersion)
                             {
-                                ErrorWriteLine($"Game client sent a higher ProtocolVersion ({listRequest.ProtocolVersion}) than supported ({SupportedProtocolVersion})", $"({socket.RemoteEndPoint})");
+                                ErrorWriteLine(connection.Id, $"Game client sent a higher ProtocolVersion ({listRequest.ProtocolVersion}) than supported ({SupportedProtocolVersion})", $"({socket.RemoteEndPoint})");
                                 return;
                             }
 
@@ -237,7 +180,7 @@ namespace NewDarkGlobalServer
                                 var serverInfoMessage = new ServerInfoMessage(otherConnection.ServerInfo.Value, otherConnection.InitialEndPoint.Address.ToString());
                                 await socket.SendAsync(serverInfoMessage.ToByteArray(), default, cancellationToken);
 
-                                LogWriteLine(serverInfoMessage.GetType().Name, $"sent to {socket.RemoteEndPoint}", $"(\"{serverInfoMessage.ServerInfo.ServerName}\", {serverInfoMessage.ServerIP}, \"{serverInfoMessage.ServerInfo.MapName}\", {serverInfoMessage.ServerInfo.StateFlags})");
+                                LogWriteLine(connection.Id, serverInfoMessage.GetType().Name, $"sent to {socket.RemoteEndPoint}", $"(\"{serverInfoMessage.ServerInfo.ServerName}\", {serverInfoMessage.ServerIP}, \"{serverInfoMessage.ServerInfo.MapName}\", {serverInfoMessage.ServerInfo.StateFlags})");
                             }
 
                             break;
@@ -245,13 +188,13 @@ namespace NewDarkGlobalServer
                         case MessageType.Heartbeat:
                             if (length > 88 || length < 48)
                             {
-                                ErrorWriteLine($"{typeof(HeartbeatMessage).Name} received has an invalid length", $"({socket.RemoteEndPoint})");
+                                ErrorWriteLine(connection.Id, $"{typeof(HeartbeatMessage).Name} received has an invalid length", $"({socket.RemoteEndPoint})");
                                 return;
                             }
 
                             if (connection.Status == ConnectionStatus.AwaitClientCommand)
                             {
-                                ErrorWriteLine("Game client sent HeartbeatMessage (message is server only)", $"({socket.RemoteEndPoint})");
+                                ErrorWriteLine(connection.Id, "Game client sent HeartbeatMessage (message is server only)", $"({socket.RemoteEndPoint})");
                                 return;
                             }
 
@@ -259,11 +202,11 @@ namespace NewDarkGlobalServer
 
                             var heartbeat = new HeartbeatMessage(buffer);
                             connection.ServerInfo = heartbeat.ServerInfo;
-                            LogWriteLine(typeof(HeartbeatMessage).Name, $"received from {socket.RemoteEndPoint}", $"(\"{heartbeat.ServerInfo.ServerName}\", \"{heartbeat.ServerInfo.MapName}\", {heartbeat.ServerInfo.StateFlags})");
+                            LogWriteLine(connection.Id, typeof(HeartbeatMessage).Name, $"received from {socket.RemoteEndPoint}", $"(\"{heartbeat.ServerInfo.ServerName}\", \"{heartbeat.ServerInfo.MapName}\", {heartbeat.ServerInfo.StateFlags})");
 
                             if (heartbeat.ProtocolVersion < SupportedProtocolVersion)
                             {
-                                ErrorWriteLine($"Game server sent a higher ProtocolVersion ({heartbeat.ProtocolVersion}) than supported ({SupportedProtocolVersion})", $"({socket.RemoteEndPoint})");
+                                ErrorWriteLine(connection.Id, $"Game server sent a higher ProtocolVersion ({heartbeat.ProtocolVersion}) than supported ({SupportedProtocolVersion})", $"({socket.RemoteEndPoint})");
                                 return;
                             }
 
@@ -275,73 +218,80 @@ namespace NewDarkGlobalServer
                         case MessageType.HeartbeatMinimal:
                             if (length != 2)
                             {
-                                ErrorWriteLine($"{typeof(HeartbeatMinimalMessage).Name} received has an invalid length", $"({socket.RemoteEndPoint})");
+                                ErrorWriteLine(connection.Id, $"{typeof(HeartbeatMinimalMessage).Name} received has an invalid length", $"({socket.RemoteEndPoint})");
                                 return;
                             }
 
                             if (connection.Status == ConnectionStatus.AwaitClientCommand)
                             {
-                                ErrorWriteLine("Game client sent HeartbeatMinimalMessage (message is server only)", $"({socket.RemoteEndPoint})");
+                                ErrorWriteLine(connection.Id, "Game client sent HeartbeatMinimalMessage (message is server only)", $"({socket.RemoteEndPoint})");
                                 return;
                             }
 
                             if (ShowHeartbeatMinimal)
-                                LogWriteLine(typeof(HeartbeatMinimalMessage).Name, $"received from {socket.RemoteEndPoint}");
+                                LogWriteLine(connection.Id, typeof(HeartbeatMinimalMessage).Name, $"received from {socket.RemoteEndPoint}");
                             break;
 
                         // this message seems to be unused
                         case MessageType.ClientExit:
                             if (length != 3)
                             {
-                                ErrorWriteLine($"{typeof(ClientExitMessage).Name} received has an invalid length", $"({socket.RemoteEndPoint})");
+                                ErrorWriteLine(connection.Id, $"{typeof(ClientExitMessage).Name} received has an invalid length", $"({socket.RemoteEndPoint})");
                                 return;
                             }
 
                             if (connection.Status != ConnectionStatus.AwaitClientCommand)
                             {
                                 if (connection.Status == ConnectionStatus.AwaitServerCommand)
-                                    ErrorWriteLine("Game server sent ClientExitMessage (message is client only)", $"({socket.RemoteEndPoint})");
+                                    ErrorWriteLine(connection.Id, "Game server sent ClientExitMessage (message is client only)", $"({socket.RemoteEndPoint})");
                                 else if (connection.Status == ConnectionStatus.NewAndUnidentified)
-                                    ErrorWriteLine("Unidentified connetion sent ClientExitMessage (message is client only)", $"({socket.RemoteEndPoint})");
+                                    ErrorWriteLine(connection.Id, "Unidentified connetion sent ClientExitMessage (message is client only)", $"({socket.RemoteEndPoint})");
 
                                 return;
                             }
 
                             var clientExit = new ClientExitMessage(buffer);
-                            LogWriteLine(typeof(ClientExitMessage).Name, $"received from {socket.RemoteEndPoint}", $"({clientExit.ExitReason})");
+                            LogWriteLine(connection.Id, typeof(ClientExitMessage).Name, $"received from {socket.RemoteEndPoint}", $"({clientExit.ExitReason})");
                             return;
 
                         // this message seems to be unused
                         case MessageType.ServerClosed:
                             if (length != 2)
                             {
-                                ErrorWriteLine($"{typeof(ServerClosedMessage).Name} received has an invalid length", $"({socket.RemoteEndPoint})");
+                                ErrorWriteLine(connection.Id, $"{typeof(ServerClosedMessage).Name} received has an invalid length", $"({socket.RemoteEndPoint})");
                                 return;
                             }
 
                             if (connection.Status != ConnectionStatus.AwaitClientCommand)
                             {
                                 if (connection.Status == ConnectionStatus.AwaitClientCommand)
-                                    ErrorWriteLine("Game client sent ServerClosedMessage (message is server only)", $"({socket.RemoteEndPoint})");
+                                    ErrorWriteLine(connection.Id, "Game client sent ServerClosedMessage (message is server only)", $"({socket.RemoteEndPoint})");
                                 else if (connection.Status == ConnectionStatus.NewAndUnidentified)
-                                    ErrorWriteLine("Unidentified connetion sent ServerClosedMessage (message is server only)", $"({socket.RemoteEndPoint})");
+                                    ErrorWriteLine(connection.Id, "Unidentified connetion sent ServerClosedMessage (message is server only)", $"({socket.RemoteEndPoint})");
 
                                 return;
                             }
 
-                            LogWriteLine(typeof(ServerClosedMessage).Name, $"received from {socket.RemoteEndPoint}");
+                            LogWriteLine(connection.Id, typeof(ServerClosedMessage).Name, $"received from {socket.RemoteEndPoint}");
                             return;
 
                         case 0:
                             if (!IsSocketAlive(socket))
                             {
-                                LogWriteLine("Connection lost", $"with {socket.RemoteEndPoint}");
+                                LogWriteLine(connection.Id, "Connection closed", $"with {socket.RemoteEndPoint}");
+                                connection.Status = ConnectionStatus.Closed;
                                 return;
                             }
                             goto default;
 
                         default:
-                            ErrorWriteLine("Unknown message type was received", $"({socket.RemoteEndPoint})");
+                            if (!HideInvalidMessageTypes)
+                            {
+                                CleanDelayed(connection.Id);
+                                ErrorWriteLine(connection.Id, "Unknown message type was received", $"({socket.RemoteEndPoint})");
+                            }
+
+                            connection.Status = ConnectionStatus.InvalidMessageType;
                             return;
                     }
 
@@ -352,19 +302,19 @@ namespace NewDarkGlobalServer
             catch (SocketException ex) when (ex.ErrorCode == (int)SocketError.OperationAborted || ex.ErrorCode != (int)SocketError.ConnectionAborted) { }
             catch (SocketException ex)
             {
-                ErrorWriteLine("Failed receiving message", $"from {connection.InitialEndPoint.Address}");
-                ErrorWriteLine(ex.ToString());
+                ErrorWriteLine(connection.Id, "Failed receiving message", $"from {connection.InitialEndPoint.Address}");
+                ErrorWriteLine(connection.Id, ex.ToString());
             }
             catch (Exception ex) when (ex is TaskCanceledException || ex is OperationCanceledException) { }
             catch (Exception ex)
             {
-                ErrorWriteLine("Failed handling message", $"from {connection.InitialEndPoint.Address}");
-                ErrorWriteLine(ex.ToString());
+                ErrorWriteLine(connection.Id, "Failed handling message", $"from {connection.InitialEndPoint.Address}");
+                ErrorWriteLine(connection.Id, ex.ToString());
             }
             finally
             {
-                if (socket.Connected)
-                    LogWriteLine("Connection closed", $"for {connection.InitialEndPoint}");
+                if (connection.Status != ConnectionStatus.Closed && (connection.Status != ConnectionStatus.InvalidMessageType || !HideInvalidMessageTypes))
+                    LogWriteLine(connection.Id, "Connection lost", $"for {connection.InitialEndPoint}");
 
                 await DisconnectAsync(connection, cancellationToken);
             }
@@ -405,20 +355,20 @@ namespace NewDarkGlobalServer
                     await connection.Socket.SendAsync(message.ToByteArray(), default, cancellationToken);
                     connection.LastActivity = DateTimeOffset.Now;
 
-                    LogWriteLine(message.GetType().Name, $"sent to {connection.Socket.RemoteEndPoint}");
+                    LogWriteLine(connection.Id, message.GetType().Name, $"sent to {connection.Socket.RemoteEndPoint}");
                 }
             }
             catch (SocketException ex) when (ex.ErrorCode == (int)SocketError.OperationAborted || ex.ErrorCode != (int)SocketError.ConnectionAborted) { }
             catch (SocketException ex)
             {
-                ErrorWriteLine("Failed broadcasting to clients");
-                ErrorWriteLine(ex.ToString());
+                ErrorWriteLine(default, "Failed broadcasting to clients");
+                ErrorWriteLine(default, ex.ToString());
             }
             catch (Exception ex) when (ex is TaskCanceledException || ex is OperationCanceledException) { }
             catch (Exception ex)
             {
-                ErrorWriteLine("Failed broadcasting to clients");
-                ErrorWriteLine(ex.ToString());
+                ErrorWriteLine(default, "Failed broadcasting to clients");
+                ErrorWriteLine(default, ex.ToString());
             }
         }
 
@@ -483,8 +433,10 @@ namespace NewDarkGlobalServer
             connection.Socket?.Close();
             _connections.TryRemove(connection.InitialEndPoint.ToString(), out _);
 
-            if (wasConnected)
+            if (wasConnected && (connection.Status != ConnectionStatus.InvalidMessageType || !HideInvalidMessageTypes))
                 ConnectionsWriteLine(_connections.Values);
+
+            CleanDelayed(connection.Id);
         }
     }
 }

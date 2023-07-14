@@ -28,3 +28,28 @@ global_server_port 5199
     - You can change that port with the command line argument `-port=YOURNUMBER`
     - IPv4 is the only supported protocol
 3. Make sure all your clients have updated their `dark_net.cfg` file with your name and port.
+
+## Command-line options
+Use the `--help` argument to show all available options.
+```
+Usage: NewDarkGlobalServer [options]
+Starts a server providing a game server list for Thief 2 Multiplayer.
+
+Options:
+  -p, --port=VALUE           Sets the port for this global server. Default is
+                               5199.
+  -s, --timeoutserver=VALUE  Sets timeout for game servers in seconds. Default
+                               is 180 seconds (00:03:00).
+  -c, --timeoutclient=VALUE  Sets timeout for game clients in seconds. Default
+                               is 3600 seconds (01:00:00).
+  -u, --timeoutunidentified=VALUE
+                             Sets timeout for game clients in seconds. Default
+                               is 10 seconds (00:00:10).
+  -b, --showheartbeatminimal Shows HeartbeatMinimal messages in the log. Each
+                               connected game server sends one every 10 seconds
+                               so the log may become cluttered.
+  -f, --hidefailedconn       Hides failed connections attempts (due to invalid
+                               or unknown messages) from the log.
+  -v, --verbose              Shows more verbose messages in the log.
+  -h, --help                 Prints this helpful option list and exits.
+```

@@ -45,6 +45,11 @@ namespace NewDarkGlobalServer
         static bool ShowHeartbeatMinimal = false;
 
         /// <summary>
+        /// If failed connections due to invalid message types should be logged.
+        /// </summary>
+        static bool HideInvalidMessageTypes = false;
+
+        /// <summary>
         /// The interval for <see cref="HandleCleanupAsync(CancellationToken)"/> to run.
         /// </summary>
         static readonly TimeSpan CleanupInterval = TimeSpan.FromSeconds(10);
