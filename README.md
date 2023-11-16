@@ -7,8 +7,9 @@ A global server providing a game server list for [Thief 2](https://en.wikipedia.
 
 ## How to setup Thief 2 Multiplayer
 1. Get yourself a copy of the game (e.g. on [GOG.com](https://www.gog.com/de/game/thief_2_the_metal_age) or [Steam](https://store.steampowered.com/app/211740/Thief_II_The_Metal_Age/)).
-2. Download the latest version of [T2Fix: An Unofficial Comprehensive Patch for Thief 2](https://github.com/Xanfre/T2Fix/releases).
-3. Install T2Fix and make sure to select the component "Thief 2 Multiplayer".
+2. Note: A few fan missions will not work after installing the multiplayer patch. So consider to create a copy of the Thief 2 game folder for singleplayer purposes.
+3. Download the latest version of [T2Fix: An Unofficial Comprehensive Patch for Thief 2](https://github.com/Xanfre/T2Fix/releases).
+4. Install T2Fix and make sure to select the component "Thief 2 Multiplayer".
 5. Open the file `dark_net.cfg` in your game folder with a text editor.
 6. Replace the last two lines with the following:
 ```ini
