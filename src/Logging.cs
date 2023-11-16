@@ -16,7 +16,7 @@ namespace NewDarkGlobalServer
 
         static readonly object _logWriteLineLock = new();
 
-        private readonly record struct DelayedWriteLine(DateTime Timestamp, string PrimayMessage, string SecondaryMessage, string? Verbose);
+        private readonly record struct DelayedWriteLine(DateTimeOffset Timestamp, string PrimayMessage, string SecondaryMessage, string? Verbose);
 
         static readonly ConcurrentDictionary<Guid, List<DelayedWriteLine>> _delayedWriteLines = new();
 
@@ -25,7 +25,7 @@ namespace NewDarkGlobalServer
             lock (_logWriteLineLock)
             {
                 Console.ForegroundColor = ConsoleColor.DarkGray;
-                Console.Write($"[{DateTime.Now}] ");
+                Console.Write($"[{DateTimeOffset.Now}] ");
                 Console.ResetColor();
                 Console.WriteLine(message);
             }
@@ -36,7 +36,7 @@ namespace NewDarkGlobalServer
             if (guid == default)
                 return;
 
-            var newEntry = new DelayedWriteLine(DateTime.Now, primayMessage, secondaryMessage, verbose);
+            var newEntry = new DelayedWriteLine(DateTimeOffset.Now, primayMessage, secondaryMessage, verbose);
 
             if (_delayedWriteLines.TryGetValue(guid, out var delayedWriteLines))
             {
@@ -81,7 +81,7 @@ namespace NewDarkGlobalServer
             }
         }
 
-        private static void LogWriteLineInternal(DateTime timestamp, string primayMessage, string secondaryMessage, string? verbose = null)
+        private static void LogWriteLineInternal(DateTimeOffset timestamp, string primayMessage, string secondaryMessage, string? verbose = null)
         {
             Console.ForegroundColor = ConsoleColor.DarkGray;
             Console.Write($"[{timestamp}] ");
@@ -121,7 +121,7 @@ namespace NewDarkGlobalServer
                 var clientCount = currentConnections.Count(c => c.Status == ConnectionStatus.AwaitClientCommand);
 
                 Console.ForegroundColor = ConsoleColor.DarkGray;
-                Console.Write($"[{DateTime.Now}] ");
+                Console.Write($"[{DateTimeOffset.Now}] ");
                 Console.ForegroundColor = ConsoleColor.Blue;
                 Console.Write($"{conenctionCount} open connection{(conenctionCount != 1 ? "s" : string.Empty)} ");
                 Console.ForegroundColor = ConsoleColor.DarkGray;
@@ -137,7 +137,7 @@ namespace NewDarkGlobalServer
                 FlushDelayed(guid);
 
                 Console.ForegroundColor = ConsoleColor.DarkGray;
-                Console.Write($"[{DateTime.Now}] ");
+                Console.Write($"[{DateTimeOffset.Now}] ");
                 Console.ResetColor();
 
                 if (secondaryMessage == null)

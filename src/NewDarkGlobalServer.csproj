@@ -3,17 +3,21 @@
   <PropertyGroup>
     <OutputType>Exe</OutputType>
     <TargetFramework>net8.0</TargetFramework>
-    <LangVersion>latest</LangVersion>
-    <Nullable>enable</Nullable>
-    <Features>strict</Features>
-    <WarningsAsErrors>nullable</WarningsAsErrors>
     <AssemblyName>NewDarkGlobalServer</AssemblyName>
     <RootNamespace>NewDarkGlobalServer</RootNamespace>
     <ApplicationManifest>App.manifest</ApplicationManifest>
     <ApplicationIcon>App.ico</ApplicationIcon>
     <Configurations>Debug;Release;ReleaseSigned</Configurations>
     <VersionPrefix>1.3.0</VersionPrefix>
-    <VersionSuffix>preview</VersionSuffix>
+    <VersionSuffix></VersionSuffix>
+  </PropertyGroup>
+
+  <!-- C# compiler -->
+  <PropertyGroup>
+    <LangVersion>latest</LangVersion>
+    <Nullable>enable</Nullable>
+    <Features>strict</Features>
+    <WarningsAsErrors>nullable</WarningsAsErrors>
   </PropertyGroup>
 
   <!-- Debug builds -->
@@ -32,6 +36,7 @@
 
   <!-- AOT settings -->
   <PropertyGroup Condition="'$(Configuration)'=='Release' or '$(Configuration)'=='ReleaseSigned'">
+    <TrimMode>full</TrimMode>
     <OptimizationPreference>Speed</OptimizationPreference>
     <!-- remove cultures/localizations -->
     <InvariantGlobalization>false</InvariantGlobalization>

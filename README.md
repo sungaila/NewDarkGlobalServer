@@ -43,8 +43,8 @@ Options:
   -c, --timeoutclient=VALUE  Sets timeout for game clients in seconds. Default
                                is 3600 seconds (01:00:00).
   -u, --timeoutunidentified=VALUE
-                             Sets timeout for game clients in seconds. Default
-                               is 10 seconds (00:00:10).
+                             Sets timeout for connections to indentify as client
+                               or server in seconds. Default is 10 seconds (00:00:10).
   -b, --showheartbeatminimal Shows HeartbeatMinimal messages in the log. Each
                                connected game server sends one every 10 seconds
                                so the log may become cluttered.

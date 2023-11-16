@@ -1,24 +1,26 @@
 name: Build project
 
 on:
+  workflow_dispatch:
   push:
-    branches: [ master ]
+    branches:
+      - 'master'
   pull_request:
-    branches: [ master ]
+    branches:
+      - '**'
 
 jobs:
   build:
-
     runs-on: ubuntu-latest
-
     steps:
     - uses: actions/checkout@v3.5.2
-    - name: Setup .NET
-      uses: xt0rted/setup-dotnet@v1.5.0
+    - name: Setup .NET 8
+      uses: actions/setup-dotnet@main
       with:
         dotnet-version: 8.x
-        include-prerelease: true
     - name: Restore dependencies
       run: dotnet restore
     - name: Build
       run: dotnet build --no-restore
+    - name: Publish
+      run: dotnet publish -p:PublishProfile=Properties/PublishProfiles/linux-x64.pubxml --no-restore
