@@ -18,9 +18,15 @@ jobs:
       uses: actions/setup-dotnet@main
       with:
         dotnet-version: 8.x
-    - name: Restore dependencies
+    - name: Restore
       run: dotnet restore
     - name: Build
       run: dotnet build --no-restore
     - name: Publish
       run: dotnet publish -p:PublishProfile=Properties/PublishProfiles/linux-x64.pubxml
+    - name: Upload
+      uses: actions/upload-artifact@main
+      with:
+        name: Binaries (linux-x64)
+        path: src/bin/Publish/linux-x64
+        if-no-files-found: error
