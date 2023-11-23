@@ -7,8 +7,9 @@
     <RootNamespace>NewDarkGlobalServer</RootNamespace>
     <ApplicationManifest>App.manifest</ApplicationManifest>
     <ApplicationIcon>App.ico</ApplicationIcon>
+    <DockerDefaultTargetOS>Linux</DockerDefaultTargetOS>
     <Configurations>Debug;Release;ReleaseSigned</Configurations>
-    <VersionPrefix>1.3.0</VersionPrefix>
+    <VersionPrefix>1.3.1</VersionPrefix>
     <VersionSuffix></VersionSuffix>
   </PropertyGroup>
 
@@ -39,9 +40,9 @@
     <TrimMode>full</TrimMode>
     <OptimizationPreference>Speed</OptimizationPreference>
     <!-- remove cultures/localizations -->
-    <InvariantGlobalization>false</InvariantGlobalization>
+    <InvariantGlobalization>true</InvariantGlobalization>
     <!-- remove exception messages -->
-    <UseSystemResourceKeys>false</UseSystemResourceKeys>
+    <UseSystemResourceKeys>true</UseSystemResourceKeys>
   </PropertyGroup>
 
   <ItemGroup>
@@ -49,6 +50,7 @@
   </ItemGroup>
 
   <ItemGroup>
+    <PackageReference Include="Microsoft.VisualStudio.Azure.Containers.Tools.Targets" Version="1.19.5" />
     <PackageReference Include="Mono.Options" Version="6.12.0.148" />
   </ItemGroup>
 

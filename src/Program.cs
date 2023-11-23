@@ -27,6 +27,7 @@ namespace NewDarkGlobalServer
                 { "u|timeoutunidentified=", $"Sets timeout for connections to indentify as client or server in seconds. Default is {UnidentifiedConnectionTimeout.TotalSeconds.ToString(CultureInfo.InvariantCulture)} seconds ({UnidentifiedConnectionTimeout:c}).", (int u) => UnidentifiedConnectionTimeout = TimeSpan.FromSeconds(u) },
                 { "b|showheartbeatminimal", "Shows HeartbeatMinimal messages in the log. Each connected game server sends one every 10 seconds so the log may become cluttered.", b => ShowHeartbeatMinimal = b != null },
                 { "f|hidefailedconn", "Hides failed connections attempts (due to invalid or unknown messages) from the log.", f => HideInvalidMessageTypes = f != null },
+                { "t|printtimestamps", "Adds timestamps to the log output.", f => PrintTimeStamps = f != null },
                 { "v|verbose", "Shows more verbose messages in the log.", v => Verbose = v != null },
                 { "h|help", "Prints this helpful option list and exits.", h => showHelp = h != null },
             };

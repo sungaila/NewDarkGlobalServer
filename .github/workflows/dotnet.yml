@@ -13,20 +13,22 @@ jobs:
   build:
     runs-on: ubuntu-latest
     steps:
-    - uses: actions/checkout@v3.5.2
+    - uses: actions/checkout@main
     - name: Setup .NET 8
       uses: actions/setup-dotnet@main
       with:
         dotnet-version: 8.x
     - name: Restore
-      run: dotnet restore
+      run: dotnet restore NewDarkGlobalServer.sln
     - name: Build
-      run: dotnet build --no-restore
+      run: dotnet build NewDarkGlobalServer.sln --no-restore
     - name: Publish
-      run: dotnet publish -p:PublishProfile=Properties/PublishProfiles/linux-x64.pubxml
+      run: dotnet publish NewDarkGlobalServer.sln -p:PublishProfile=Properties/PublishProfiles/linux-x64.pubxml
     - name: Upload
       uses: actions/upload-artifact@main
       with:
         name: Binaries (linux-x64)
         path: src/bin/Publish/linux-x64
         if-no-files-found: error
+    - name: docker compose build
+      run: docker compose build
