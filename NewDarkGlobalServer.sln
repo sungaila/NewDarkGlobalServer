@@ -6,14 +6,12 @@ MinimumVisualStudioVersion = 10.0.40219.1
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Solution Items", "Solution Items", "{8EC2AF12-8010-453B-8971-E688ADC7C9F4}"
 	ProjectSection(SolutionItems) = preProject
 		.github\workflows\dotnet.yml = .github\workflows\dotnet.yml
-		publish_linux-arm64.sh = publish_linux-arm64.sh
-		publish_linux-x64.sh = publish_linux-x64.sh
-		publish_win-arm64.bat = publish_win-arm64.bat
-		publish_win-x64.bat = publish_win-x64.bat
 		README.md = README.md
 	EndProjectSection
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "NewDarkGlobalServer", "src\NewDarkGlobalServer.csproj", "{59AC9055-C90F-4CA9-8BAF-483A33B8DB2D}"
+EndProject
+Project("{E53339B2-1760-4266-BCC7-CA923CBCF16C}") = "docker-compose", "docker-compose.dcproj", "{A0B1EDF7-85ED-42B6-93D8-A20DD4D6726D}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -28,6 +26,12 @@ Global
 		{59AC9055-C90F-4CA9-8BAF-483A33B8DB2D}.Release|Any CPU.Build.0 = Release|Any CPU
 		{59AC9055-C90F-4CA9-8BAF-483A33B8DB2D}.ReleaseSigned|Any CPU.ActiveCfg = ReleaseSigned|Any CPU
 		{59AC9055-C90F-4CA9-8BAF-483A33B8DB2D}.ReleaseSigned|Any CPU.Build.0 = ReleaseSigned|Any CPU
+		{A0B1EDF7-85ED-42B6-93D8-A20DD4D6726D}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{A0B1EDF7-85ED-42B6-93D8-A20DD4D6726D}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{A0B1EDF7-85ED-42B6-93D8-A20DD4D6726D}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{A0B1EDF7-85ED-42B6-93D8-A20DD4D6726D}.Release|Any CPU.Build.0 = Release|Any CPU
+		{A0B1EDF7-85ED-42B6-93D8-A20DD4D6726D}.ReleaseSigned|Any CPU.ActiveCfg = Release|Any CPU
+		{A0B1EDF7-85ED-42B6-93D8-A20DD4D6726D}.ReleaseSigned|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE

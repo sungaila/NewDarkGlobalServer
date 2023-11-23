@@ -7,12 +7,17 @@ using static NewDarkGlobalServer.States;
 
 namespace NewDarkGlobalServer
 {
-    internal class Logging
+    internal static class Logging
     {
         /// <summary>
         /// If verbose messages should be logged.
         /// </summary>
         public static bool Verbose = false;
+
+        /// <summary>
+        /// If timestamps should be included in logged output.
+        /// </summary>
+        public static bool PrintTimeStamps = false;
 
         static readonly object _logWriteLineLock = new();
 
@@ -24,9 +29,12 @@ namespace NewDarkGlobalServer
         {
             lock (_logWriteLineLock)
             {
-                Console.ForegroundColor = ConsoleColor.DarkGray;
-                Console.Write($"[{DateTimeOffset.Now}] ");
-                Console.ResetColor();
+                if (PrintTimeStamps)
+                {
+                    Console.ForegroundColor = ConsoleColor.DarkGray;
+                    Console.Write($"[{DateTimeOffset.Now}] ");
+                    Console.ResetColor();
+                }
                 Console.WriteLine(message);
             }
         }
@@ -83,9 +91,12 @@ namespace NewDarkGlobalServer
 
         private static void LogWriteLineInternal(DateTimeOffset timestamp, string primayMessage, string secondaryMessage, string? verbose = null)
         {
-            Console.ForegroundColor = ConsoleColor.DarkGray;
-            Console.Write($"[{timestamp}] ");
-            Console.ResetColor();
+            if (PrintTimeStamps)
+            {
+                Console.ForegroundColor = ConsoleColor.DarkGray;
+                Console.Write($"[{timestamp}] ");
+                Console.ResetColor();
+            }
 
             if (secondaryMessage == null)
             {
@@ -120,8 +131,12 @@ namespace NewDarkGlobalServer
                 var serverClosedCount = currentConnections.Count(c => c.Status == ConnectionStatus.AwaitServerCommand && c.ServerInfo?.StateFlags == GameStateFlags.Closed);
                 var clientCount = currentConnections.Count(c => c.Status == ConnectionStatus.AwaitClientCommand);
 
-                Console.ForegroundColor = ConsoleColor.DarkGray;
-                Console.Write($"[{DateTimeOffset.Now}] ");
+                if (PrintTimeStamps)
+                {
+                    Console.ForegroundColor = ConsoleColor.DarkGray;
+                    Console.Write($"[{DateTimeOffset.Now}] ");
+                }
+
                 Console.ForegroundColor = ConsoleColor.Blue;
                 Console.Write($"{conenctionCount} open connection{(conenctionCount != 1 ? "s" : string.Empty)} ");
                 Console.ForegroundColor = ConsoleColor.DarkGray;
@@ -136,9 +151,12 @@ namespace NewDarkGlobalServer
             {
                 FlushDelayed(guid);
 
-                Console.ForegroundColor = ConsoleColor.DarkGray;
-                Console.Write($"[{DateTimeOffset.Now}] ");
-                Console.ResetColor();
+                if (PrintTimeStamps)
+                {
+                    Console.ForegroundColor = ConsoleColor.DarkGray;
+                    Console.Write($"[{DateTimeOffset.Now}] ");
+                    Console.ResetColor();
+                }
 
                 if (secondaryMessage == null)
                 {

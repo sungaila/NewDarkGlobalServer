@@ -1,0 +1,10 @@
+version: '3.4'
+
+services:
+  newdarkglobalserver:
+    image: ${DOCKER_REGISTRY-}newdarkglobalserver
+    build:
+      context: .
+      dockerfile: src/Dockerfile
+    ports:
+      - 5199:5199
