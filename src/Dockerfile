@@ -1,24 +1,32 @@
-#See https://aka.ms/customizecontainer to learn how to customize your debug container and how Visual Studio uses this Dockerfile to build your images for faster debugging.
+ARG LAUNCHING_FROM_VS
+ARG FINAL_BASE_IMAGE=${LAUNCHING_FROM_VS:+aotdebug}
 
 FROM mcr.microsoft.com/dotnet/runtime:8.0-alpine AS base
-EXPOSE 5199
 USER app
 WORKDIR /app
 
 FROM mcr.microsoft.com/dotnet/sdk:8.0-alpine AS build
+RUN apk update \
+    && apk add build-base zlib-dev
 ARG BUILD_CONFIGURATION=Release
 WORKDIR /src
 COPY ["src/NewDarkGlobalServer.csproj", "src/"]
-RUN dotnet restore "./src/./NewDarkGlobalServer.csproj"
+RUN dotnet restore "./src/NewDarkGlobalServer.csproj"
 COPY . .
 WORKDIR "/src/src"
 RUN dotnet build "./NewDarkGlobalServer.csproj" -c $BUILD_CONFIGURATION -o /app/build
 
 FROM build AS publish
 ARG BUILD_CONFIGURATION=Release
-RUN dotnet publish "./NewDarkGlobalServer.csproj" -c $BUILD_CONFIGURATION -o /app/publish /p:UseAppHost=false
+RUN dotnet publish "./NewDarkGlobalServer.csproj" -c $BUILD_CONFIGURATION -o /app/publish /p:UseAppHost=true
 
-FROM base AS final
+FROM base as aotdebug
+USER root
+RUN apk update \
+    && apk add gdb
+USER app
+
+FROM ${FINAL_BASE_IMAGE:-mcr.microsoft.com/dotnet/runtime-deps:8.0-alpine} AS final
 WORKDIR /app
 COPY --from=publish /app/publish .
-ENTRYPOINT ["dotnet", "NewDarkGlobalServer.dll", "-t"]
+ENTRYPOINT ["./NewDarkGlobalServer"]

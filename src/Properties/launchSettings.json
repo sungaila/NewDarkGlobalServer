@@ -1,7 +1,8 @@
 {
   "profiles": {
     "NewDarkGlobalServer": {
-      "commandName": "Project"
+      "commandName": "Project",
+      "commandLineArgs": "--verbose"
     },
     "WSL": {
       "commandName": "WSL2",
