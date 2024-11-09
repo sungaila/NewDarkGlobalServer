@@ -20,7 +20,7 @@ FROM build AS publish
 ARG BUILD_CONFIGURATION=Release
 RUN dotnet publish "./NewDarkGlobalServer.csproj" -c $BUILD_CONFIGURATION -o /app/publish /p:UseAppHost=true
 
-FROM base as aotdebug
+FROM base AS aotdebug
 USER root
 RUN apk update \
     && apk add gdb

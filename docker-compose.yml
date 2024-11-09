@@ -1,5 +1,3 @@
-version: '3.4'
-
 services:
   newdarkglobalserver:
     image: ${DOCKER_REGISTRY-}newdarkglobalserver
