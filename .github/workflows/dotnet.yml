@@ -14,10 +14,10 @@ jobs:
     runs-on: ubuntu-latest
     steps:
     - uses: actions/checkout@main
-    - name: Setup .NET 8
+    - name: Setup .NET 9
       uses: actions/setup-dotnet@main
       with:
-        dotnet-version: 8.x
+        dotnet-version: 9.x
     - name: Restore
       run: dotnet restore NewDarkGlobalServer.sln
     - name: Build
