@@ -1,6 +1,6 @@
 services:
   newdarkglobalserver:
-    image: ${DOCKER_REGISTRY-}newdarkglobalserver
+    image: ${DOCKER_REGISTRY-}sungaila/newdarkglobalserver
     build:
       context: .
       dockerfile: src/Dockerfile

@@ -23,7 +23,8 @@ RUN dotnet publish "./NewDarkGlobalServer.csproj" -c $BUILD_CONFIGURATION -o /ap
 FROM base AS aotdebug
 USER root
 RUN apk update \
-    && apk add gdb
+    && apk add gdb \
+    && apk add --update qemu-x86_64
 USER app
 
 FROM ${FINAL_BASE_IMAGE:-mcr.microsoft.com/dotnet/runtime-deps:9.0-alpine} AS final
