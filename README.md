@@ -2,6 +2,7 @@
 
 [![GitHub Workflow Status (branch)](https://img.shields.io/github/actions/workflow/status/sungaila/NewDarkGlobalServer/dotnet.yml?branch=master&style=flat-square)](https://github.com/sungaila/NewDarkGlobalServer/actions/workflows/dotnet.yml)
 [![GitHub license](https://img.shields.io/github/license/sungaila/NewDarkGlobalServer?style=flat-square)](https://github.com/sungaila/NewDarkGlobalServer/blob/master/LICENSE)
+[![Docker Pulls](https://img.shields.io/docker/pulls/sungaila/newdarkglobalserver?style=flat-square&label=Docker%20Hub)](https://hub.docker.com/repository/docker/sungaila/newdarkglobalserver/general)
 
 A global server providing a game server list for [Thief 2](https://en.wikipedia.org/wiki/Thief_II) Multiplayer.
 
