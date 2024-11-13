@@ -22,6 +22,14 @@
     <WarningsAsErrors>nullable</WarningsAsErrors>
   </PropertyGroup>
 
+  <!-- Trimming options -->
+  <PropertyGroup>
+    <TrimMode>full</TrimMode>
+    <DebuggerSupport>false</DebuggerSupport>
+    <StackTraceSupport>false</StackTraceSupport>
+    <_AggressiveAttributeTrimming>true</_AggressiveAttributeTrimming>
+  </PropertyGroup>
+
   <!-- Debug builds -->
   <PropertyGroup Condition="'$(Configuration)'=='Debug'">
     <VersionSuffix>debug</VersionSuffix>
