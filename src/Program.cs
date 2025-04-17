@@ -162,7 +162,7 @@ namespace NewDarkGlobalServer
                             var listRequest = new ListRequestMessage(buffer);
                             LogWriteLine(connection.Id, typeof(ListRequestMessage).Name, $"received from {socket.RemoteEndPoint}");
 
-                            if (listRequest.ProtocolVersion < SupportedProtocolVersion)
+                            if (listRequest.ProtocolVersion > SupportedProtocolVersion)
                             {
                                 ErrorWriteLine(connection.Id, $"Game client sent a higher ProtocolVersion ({listRequest.ProtocolVersion}) than supported ({SupportedProtocolVersion})", $"({socket.RemoteEndPoint})");
                                 return;
