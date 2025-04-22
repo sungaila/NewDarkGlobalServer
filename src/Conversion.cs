@@ -7,8 +7,7 @@ namespace NewDarkGlobalServer
     {
         public static short ShortToHostOrder(this byte[] array)
         {
-            if (array == null)
-                throw new ArgumentNullException(nameof(array));
+            ArgumentNullException.ThrowIfNull(array);
 
             if (array.Length != 2)
                 throw new ArgumentOutOfRangeException(nameof(array));
@@ -18,8 +17,7 @@ namespace NewDarkGlobalServer
 
         public static int IntToHostOrder(this byte[] array)
         {
-            if (array == null)
-                throw new ArgumentNullException(nameof(array));
+            ArgumentNullException.ThrowIfNull(array);
 
             if (array.Length != 4)
                 throw new ArgumentOutOfRangeException(nameof(array));
@@ -29,8 +27,7 @@ namespace NewDarkGlobalServer
 
         public static long LongToHostOrder(this byte[] array)
         {
-            if (array == null)
-                throw new ArgumentNullException(nameof(array));
+            ArgumentNullException.ThrowIfNull(array);
 
             if (array.Length != 8)
                 throw new ArgumentOutOfRangeException(nameof(array));
