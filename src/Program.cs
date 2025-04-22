@@ -187,7 +187,8 @@ namespace NewDarkGlobalServer
                             break;
 
                         case MessageType.Heartbeat:
-                            if (length > 88 || length < 48)
+                            // ServerInfo has either empty strings (min length) or full strings (30 chars server name, 30 chars map name; max length)
+                            if (length < 28 || length > 88)
                             {
                                 ErrorWriteLine(connection.Id, $"{typeof(HeartbeatMessage).Name} received has an invalid length", $"({socket.RemoteEndPoint})");
                                 return;
