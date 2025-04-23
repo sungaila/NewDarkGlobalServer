@@ -20,8 +20,11 @@ global_server_port 5199
 6. Read the text file `mp_release_notes.txt` for more information.
 7. Enjoy! Start the game with `Thief2MP.exe`. Windows might prompt you to install [DirectPlay](https://en.wikipedia.org/wiki/DirectPlay) on first launch.
     - Select `Multiplayer` and then `View Server List` to see all running game servers.
-    - Host your own game with `Host a game` (UDP port `5198`). You will show up in the server list if clients can connect to you. If your game shows `Connected to global server.` **but others cannot see you in the global server list**, then a connection cannot be established (firewall, NAT, IPv4-only ...).
-    - Sometimes selecting `View Server List` crashes the game. Hosting a game (seeing the player list), cancelling and then selecting `View Server List` seems to circumvent this weird issue.
+    - Host your own game with `Host a game` (UDP port `5198`). You will show up in the server list if clients can connect to you. If your game shows `Connected to global server.`, **but others cannot see you in the global server list**, then no connection can be established between your server and the clients (firewall, NAT, IPv4-only, other problems).
+    - Sometimes selecting `View Server List` crashes the game. As a workaround try the following: Select `Host a Game`, then go `Back` and try again to select `View Server List`.
+    - If viewing the server list is not working at all, you can fallback to using `Join a Game` and entering the server IP yourself.
+
+<p align="center"><img src="https://raw.githubusercontent.com/sungaila/NewDarkGlobalServer/refs/heads/master/etc/GlobalServerList.png" width="600" alt="Screenshot of the global server list"></p>
 
 ## How to setup your own NewDarkGlobalServer
 1. Download [the latest release](https://github.com/sungaila/NewDarkGlobalServer/releases).
