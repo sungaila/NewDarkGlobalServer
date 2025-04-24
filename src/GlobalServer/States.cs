@@ -2,9 +2,9 @@
 using System.Net;
 using System.Net.Sockets;
 using System.Threading.Tasks;
-using static NewDarkGlobalServer.Messages;
+using static Sungaila.NewDark.Core.Messages;
 
-namespace NewDarkGlobalServer
+namespace Sungaila.NewDark.GlobalServer
 {
     public class States
     {

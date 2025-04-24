@@ -1,0 +1,57 @@
+﻿@page "/"
+@using Sungaila.NewDark.Core
+
+<PageTitle>Home</PageTitle>
+
+<InputText @bind-Value="Model.GlobalServerName" id="globalserveraddress" autocomplete="on" placeholder="Address" size="20" style="position: absolute; left: 83px; top: 65px;" />
+<InputNumber @bind-Value="Model.GlobalServerPort" id="globalserverport" min="0" max="65535" step="1" autocomplete="on" placeholder="Port" size="6" style="position: absolute; left: 258px; top: 65px;" />
+
+<div style="position: absolute; left: 345px; top: 65px; font-size: 10px; display: flex; align-items: center;">
+    <InputCheckbox @bind-Value="Model.ShowClosed" id="showclosed" @onchange="FilterChanged" />
+    <label for="showclosed" style="margin: 0;">
+        Show closed <span title="The host must exit and re-host the game to allow players to join.">🛈</span>
+    </label>
+</div>
+
+<div style="position: absolute; left: 445px; top: 65px; font-size: 10px; display: flex; align-items: center;">
+    <InputCheckbox @bind-Value="Model.ShowDenied" id="showdenied" @onchange="FilterChanged" />
+    <label for="showdenied" style="margin: 0;">
+        Show denied <span title="These servers are listed in the global server, but the global server was unable to connect to the game session (firewall, NAT issues, etc.). These servers are not displayed in the in-game server list, but you may be able to join directly via the IP address.">🛈</span>
+    </label>
+</div>
+
+<div style="position: absolute; left: 83px; top: 90px; width: 459px; height: 250px; overflow-x: hidden; overflow-y: auto;">
+    <table id="serverlist" style="table-layout: fixed; width: 100%; font-size: 10px;">
+        <thead>
+            <tr style="font-weight: bold; text-align: left;">
+                <th style="position: sticky; top: 0; background: #010000; width: 25%;">Server</th>
+                <th style="position: sticky; top: 0; background: #010000; width: 20%;">Address</th>
+                <th style="position: sticky; top: 0; background: #010000; width: 35%;">Map</th>
+                <th style="position: sticky; top: 0; background: #010000;">Plrs</th>
+                <th style="position: sticky; top: 0; background: #010000;">Status</th>
+            </tr>
+        </thead>
+        <tbody>
+            @foreach (var server in Model.ServersFiltered)
+            {
+                <tr>
+                    <td>@server.ServerName</td>
+                    <td>@server.Address</td>
+                    <td>@server.MapName</td>
+                    <td>@server.Players</td>
+                    <td>@server.StatusAsString</td>
+                </tr>
+            }
+        </tbody>
+    </table>
+</div>
+
+@if (Model.StatusMessage != null)
+{
+    <div style="position: absolute; left: 100px; right: 100px; top: 110px; bottom: 140px; display: flex; align-items: center;" class="container">
+        <p style="width: 100%; text-align: center;">@Model.StatusMessage</p>
+    </div>
+}
+
+<a style="position: absolute; left: 158px; top: 415px; cursor:pointer;" @onclick="OnRefresh">Refresh</a>
+<a href="https://github.com/sungaila/NewDarkGlobalServer" target="_blank" rel="noopener noreferrer" style="position: absolute; left: 402px; top: 415px;">GitHub</a>

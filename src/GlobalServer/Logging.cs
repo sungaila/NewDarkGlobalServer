@@ -2,10 +2,11 @@
 using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Linq;
-using static NewDarkGlobalServer.Messages;
-using static NewDarkGlobalServer.States;
+using System.Threading;
+using static Sungaila.NewDark.Core.Messages;
+using static Sungaila.NewDark.GlobalServer.States;
 
-namespace NewDarkGlobalServer
+namespace Sungaila.NewDark.GlobalServer
 {
     internal static class Logging
     {
@@ -19,7 +20,7 @@ namespace NewDarkGlobalServer
         /// </summary>
         public static bool PrintTimeStamps = false;
 
-        static readonly object _logWriteLineLock = new();
+        static readonly Lock _logWriteLineLock = new();
 
         private readonly record struct DelayedWriteLine(DateTimeOffset Timestamp, string PrimayMessage, string SecondaryMessage, string? Verbose);
 
@@ -52,7 +53,7 @@ namespace NewDarkGlobalServer
             }
             else
             {
-                _delayedWriteLines.TryAdd(guid, new List<DelayedWriteLine> { newEntry });
+                _delayedWriteLines.TryAdd(guid, [newEntry]);
             }
         }
 

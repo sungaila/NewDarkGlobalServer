@@ -1,9 +1,9 @@
 ﻿using System;
 using System.Net;
 
-namespace NewDarkGlobalServer
+namespace Sungaila.NewDark.Core
 {
-    internal static class Conversion
+    public static class Conversion
     {
         public static short ShortToHostOrder(this byte[] array)
         {

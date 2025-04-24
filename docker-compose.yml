@@ -3,6 +3,6 @@ services:
     image: ${DOCKER_REGISTRY-}sungaila/newdarkglobalserver
     build:
       context: .
-      dockerfile: src/Dockerfile
+      dockerfile: src/GlobalServer/Dockerfile
     ports:
       - 5199:5199

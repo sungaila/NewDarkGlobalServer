@@ -3,7 +3,7 @@ using System.Collections.Generic;
 using System.Net;
 using System.Text;
 
-namespace NewDarkGlobalServer
+namespace Sungaila.NewDark.Core
 {
     public class Messages
     {
@@ -273,6 +273,46 @@ namespace NewDarkGlobalServer
                 byteList.AddRange(Encoding.ASCII.GetBytes(ServerIP[..Math.Min(ServerIP.Length, 15)] + '\0'));
 
                 return byteList.ToArray();
+            }
+        }
+
+        [Flags]
+        public enum WebSocketServerStatus : byte
+        {
+            Open = 1 << 0,
+            Closed = 1 << 1,
+            Denied = 1 << 2
+        }
+
+        public readonly record struct WebSocketServerInfo(string ServerName, string MapName, string Address, WebSocketServerStatus Status, ushort? PlayerCount, ushort? MaxPlayers)
+        {
+            public string? Players
+            {
+                get
+                {
+                    if (Status.HasFlag(WebSocketServerStatus.Denied) || PlayerCount == null || MaxPlayers == null)
+                        return null;
+
+                    return $"{PlayerCount}/{MaxPlayers}";
+                }
+            }
+
+            public string StatusAsString
+            {
+                get
+                {
+                    var flags = new List<string>();
+
+                    if (Status.HasFlag(WebSocketServerStatus.Closed))
+                        flags.Add(nameof(WebSocketServerStatus.Closed));
+                    else
+                        flags.Add(nameof(WebSocketServerStatus.Open));
+
+                    if (Status.HasFlag(WebSocketServerStatus.Denied))
+                        flags.Add(nameof(WebSocketServerStatus.Denied));
+
+                    return string.Join(", ", flags);
+                }
             }
         }
     }

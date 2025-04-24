@@ -1,0 +1,88 @@
+﻿using Mono.Options;
+using Sungaila.NewDark.Core;
+using System;
+using System.Globalization;
+using System.Linq;
+using System.Net;
+using System.Net.Sockets;
+using System.Threading;
+using System.Threading.Tasks;
+using static Sungaila.NewDark.Core.Messages;
+using static Sungaila.NewDark.GlobalServer.Logging;
+using static Sungaila.NewDark.GlobalServer.States;
+
+namespace Sungaila.NewDark.GlobalServer
+{
+    public static partial class Program
+    {
+        internal static TcpGlobalServer? _tcp = null;
+        internal static WebSocketGlobalServer? _webSocket = null;
+
+        public static async Task Main(string[] args)
+        {
+            Console.Title = "Thief 2 Multiplayer Global Server";
+
+            bool showHelp = false;
+            int port = 5199;
+            TimeSpan unidentifiedConnectionTimeout = TimeSpan.FromSeconds(10);
+            TimeSpan serverConnectionTimeout = TimeSpan.FromMinutes(3);
+            TimeSpan clientConnectionTimeout = TimeSpan.FromHours(1);
+            bool showHeartbeatMinimal = false;
+            bool hideInvalidMessageTypes = false;
+
+            var options = new OptionSet {
+                { "p|port=", $"Sets the port for this global server. Default is {port.ToString(CultureInfo.InvariantCulture)}.", (int p) => port = p },
+                { "s|timeoutserver=", $"Sets timeout for game servers in seconds. Default is {serverConnectionTimeout.TotalSeconds.ToString(CultureInfo.InvariantCulture)} seconds ({serverConnectionTimeout:c}).", (int s) => serverConnectionTimeout = TimeSpan.FromSeconds(s) },
+                { "c|timeoutclient=", $"Sets timeout for game clients in seconds. Default is {clientConnectionTimeout.TotalSeconds.ToString(CultureInfo.InvariantCulture)} seconds ({clientConnectionTimeout:c}).", (int c) => clientConnectionTimeout = TimeSpan.FromSeconds(c) },
+                { "u|timeoutunidentified=", $"Sets timeout for connections to indentify as client or server in seconds. Default is {unidentifiedConnectionTimeout.TotalSeconds.ToString(CultureInfo.InvariantCulture)} seconds ({unidentifiedConnectionTimeout:c}).", (int u) => unidentifiedConnectionTimeout = TimeSpan.FromSeconds(u) },
+                { "b|showheartbeatminimal", "Shows HeartbeatMinimal messages in the log. Each connected game server sends one every 10 seconds so the log may become cluttered.", b => showHeartbeatMinimal = b != null },
+                { "f|hidefailedconn", "Hides failed connections attempts (due to invalid or unknown messages) from the log.", f => hideInvalidMessageTypes = f != null },
+                { "t|printtimestamps", "Adds timestamps to the log output.", f => PrintTimeStamps = f != null },
+                { "v|verbose", "Shows more verbose messages in the log.", v => Verbose = v != null },
+                { "h|help", "Prints this helpful option list and exits.", h => showHelp = h != null },
+            };
+
+            try
+            {
+                options.Parse(args);
+            }
+            catch (OptionException ex)
+            {
+                ErrorWriteLine(default, ex.Message, "Use --help for more information.");
+                throw;
+            }
+
+            if (showHelp)
+            {
+                Console.WriteLine($"Usage: {typeof(Program).Assembly.GetName().Name} [options]");
+                Console.WriteLine("Starts a server providing a game server list for Thief 2 Multiplayer.");
+                Console.WriteLine();
+
+                Console.WriteLine("Options:");
+                options.WriteOptionDescriptions(Console.Out);
+                return;
+            }
+
+            Console.WriteLine($"Starting {typeof(Program).Assembly.GetName().Name} {typeof(Program).Assembly.GetName().Version}");
+
+            var cts = new CancellationTokenSource();
+            Console.CancelKeyPress += (_, e) =>
+            {
+                e.Cancel = true;
+                cts.Cancel();
+            };
+
+            _tcp = new TcpGlobalServer(
+                port,
+                unidentifiedConnectionTimeout,
+                serverConnectionTimeout,
+                clientConnectionTimeout, 
+                showHeartbeatMinimal,
+                hideInvalidMessageTypes);
+
+            _webSocket = new WebSocketGlobalServer();
+
+            await Task.WhenAll(_tcp.RunAsync(cts.Token), _webSocket.RunAsync(cts.Token));
+        }
+    }
+}
