@@ -10,10 +10,11 @@ RUN apk update \
     && apk add build-base zlib-dev
 ARG BUILD_CONFIGURATION=Release
 WORKDIR /src
-COPY ["src/NewDarkGlobalServer.csproj", "src/"]
-RUN dotnet restore "./src/NewDarkGlobalServer.csproj"
+COPY ["src/GlobalServer/NewDarkGlobalServer.csproj", "src/GlobalServer/"]
+COPY ["src/Core/Core.csproj", "src/Core/"]
+RUN dotnet restore "./src/GlobalServer/NewDarkGlobalServer.csproj"
 COPY . .
-WORKDIR "/src/src"
+WORKDIR "/src/src/GlobalServer"
 RUN dotnet build "./NewDarkGlobalServer.csproj" -c $BUILD_CONFIGURATION -o /app/build
 
 FROM build AS publish

@@ -28,6 +28,7 @@
     <DebuggerSupport>false</DebuggerSupport>
     <StackTraceSupport>false</StackTraceSupport>
     <_AggressiveAttributeTrimming>true</_AggressiveAttributeTrimming>
+    <DockerfileContext>..\..</DockerfileContext>
   </PropertyGroup>
 
   <!-- Debug builds -->
