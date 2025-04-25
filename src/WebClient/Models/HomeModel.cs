@@ -4,7 +4,7 @@ namespace Sungaila.NewDark.WebClient.Models
 {
     public class HomeModel
     {
-        public string GlobalServerName { get; set; } = "localhost";
+        public string GlobalServerName { get; set; } = "thief2.sungaila.de";
 
         public int GlobalServerPort { get; set; } = 5200;
 

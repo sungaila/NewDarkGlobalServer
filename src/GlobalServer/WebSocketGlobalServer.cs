@@ -25,7 +25,7 @@ namespace Sungaila.NewDark.GlobalServer
 
             try
             {
-                using var server = new WatsonWsServer(localEndPoint.Address.ToString(), localEndPoint.Port, false);
+                using var server = new WatsonWsServer(localEndPoint.Address.ToString(), localEndPoint.Port, true);
 
                 server.ClientConnected += async (s, e) =>
                 {

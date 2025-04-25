@@ -46,7 +46,7 @@ namespace Sungaila.NewDark.WebClient.Pages
 
                 try
                 {
-                    await client.ConnectAsync(new Uri($"ws://{Model.GlobalServerName}:{Model.GlobalServerPort}"), CancellationToken.None);
+                    await client.ConnectAsync(new Uri($"wss://{Model.GlobalServerName}:{Model.GlobalServerPort}"), CancellationToken.None);
                     var buffer = new ArraySegment<byte>(new byte[1024]);
                     var result = await client.ReceiveAsync(buffer, CancellationToken.None);
                     var message = System.Text.Encoding.UTF8.GetString(buffer.Array, 0, result.Count);
