@@ -15,7 +15,7 @@ namespace Sungaila.NewDark.GlobalServer
     /// Represents a WebSocket server for the global server (non-game clients).
     /// </summary>
     /// <param name="Port">The port the WebSocket uses.</param>
-    internal sealed class WebSocketGlobalServer(int Port)
+    internal sealed class WebSocketGlobalServer(string hostname, int Port)
     {
         public async Task RunAsync(CancellationToken cancellationToken)
         {
@@ -25,7 +25,7 @@ namespace Sungaila.NewDark.GlobalServer
 
             try
             {
-                using var server = new WatsonWsServer(localEndPoint.Address.ToString(), localEndPoint.Port, true);
+                using var server = new WatsonWsServer(hostname, localEndPoint.Port, true);
 
                 server.ClientConnected += async (s, e) =>
                 {

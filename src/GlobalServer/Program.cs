@@ -21,6 +21,7 @@ namespace Sungaila.NewDark.GlobalServer
             bool showHelp = false;
             int port = 5199;
             bool websocket = false;
+            string websocketHostname = "localhost";
             int websocketPort = 5200;
             TimeSpan unidentifiedConnectionTimeout = TimeSpan.FromSeconds(10);
             TimeSpan serverConnectionTimeout = TimeSpan.FromMinutes(3);
@@ -30,7 +31,8 @@ namespace Sungaila.NewDark.GlobalServer
 
             var options = new OptionSet {
                 { "p|port=", $"Sets the port for this global server. Default is {port.ToString(CultureInfo.InvariantCulture)}.", (int p) => port = p },
-                { "w|websocket=", $"Activates the optional WebSocket for non-game clients. Deactivated by default.", b => websocket = b != null },
+                { "w|websocket", $"Activates the optional WebSocket for non-game clients. Deactivated by default.", b => websocket = b != null },
+                { "m|websockethostname=", $"Sets the hostname for the WebSocket. Default is {websocketHostname.ToString(CultureInfo.InvariantCulture)}.", (string h) => websocketHostname = h },
                 { "m|websocketport=", $"Sets the port for the WebSocket. Default is {websocketPort.ToString(CultureInfo.InvariantCulture)}.", (int p) => websocketPort = p },
                 { "s|timeoutserver=", $"Sets timeout for game servers in seconds. Default is {serverConnectionTimeout.TotalSeconds.ToString(CultureInfo.InvariantCulture)} seconds ({serverConnectionTimeout:c}).", (int s) => serverConnectionTimeout = TimeSpan.FromSeconds(s) },
                 { "c|timeoutclient=", $"Sets timeout for game clients in seconds. Default is {clientConnectionTimeout.TotalSeconds.ToString(CultureInfo.InvariantCulture)} seconds ({clientConnectionTimeout:c}).", (int c) => clientConnectionTimeout = TimeSpan.FromSeconds(c) },
@@ -88,7 +90,7 @@ namespace Sungaila.NewDark.GlobalServer
 
             if (websocket)
             {
-                _webSocket = new WebSocketGlobalServer(websocketPort);
+                _webSocket = new WebSocketGlobalServer(websocketHostname, websocketPort);
                 tasks.Add(_webSocket.RunAsync(cts.Token));
             }
 
