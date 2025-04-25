@@ -4,6 +4,7 @@ using System.Linq;
 using System.Net;
 using System.Runtime.InteropServices;
 using System.Text;
+using System.Text.Json.Serialization;
 
 namespace Sungaila.NewDark.Core
 {
@@ -288,6 +289,7 @@ namespace Sungaila.NewDark.Core
 
         public readonly record struct WebSocketServerInfo(string ServerName, string MapName, string Address, WebSocketServerStatus Status, uint? CurrentPlayers, uint? MaxPlayers)
         {
+            [JsonIgnore]
             public string? Players
             {
                 get
@@ -299,6 +301,7 @@ namespace Sungaila.NewDark.Core
                 }
             }
 
+            [JsonIgnore]
             public string StatusAsString
             {
                 get
