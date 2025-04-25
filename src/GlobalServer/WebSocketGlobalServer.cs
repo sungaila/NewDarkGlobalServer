@@ -1,7 +1,6 @@
 ﻿using Sungaila.NewDark.Core;
 using System;
 using System.Collections.Generic;
-using System.Net;
 using System.Text.Json;
 using System.Threading;
 using System.Threading.Tasks;
@@ -16,15 +15,16 @@ namespace Sungaila.NewDark.GlobalServer
     /// </summary>
     /// <param name="hostname">The hostnames or IPs the WebSocket listens to.</param>
     /// <param name="port">The port the WebSocket uses.</param>
-    internal sealed class WebSocketGlobalServer(string hostname, int port)
+    /// <param name="ssl">If SSL is used for the WebSocket.</param>
+    internal sealed class WebSocketGlobalServer(string hostname, int port, bool ssl)
     {
         public async Task RunAsync(CancellationToken cancellationToken)
         {
-            LogWriteLine($"Bind {hostname} and await WebSocket connections");
+            LogWriteLine($"Bind {hostname}:{port} (SSL: {ssl}) and await WebSocket connections");
 
             try
             {
-                using var server = new WatsonWsServer(hostname, port, true);
+                using var server = new WatsonWsServer(hostname, port, ssl);
 
                 server.ClientConnected += async (s, e) =>
                 {
