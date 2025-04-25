@@ -1,6 +1,8 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Linq;
 using System.Net;
+using System.Runtime.InteropServices;
 using System.Text;
 
 namespace Sungaila.NewDark.Core
@@ -10,7 +12,7 @@ namespace Sungaila.NewDark.Core
         const ushort MessageSystemBase = 100;
         const ushort MessageGameBase = 200;
 
-        public static readonly Guid Thief2GameId = new("00f682d7-ab11-4540-9fc2-c43e97358c73");
+        public static readonly Guid Thief2GameId = new("00F682D7-AB11-4540-9FC2-C43E97358C73");
 
         public enum MessageType : ushort
         {
@@ -55,9 +57,9 @@ namespace Sungaila.NewDark.Core
                 Reserved3 = input[5];
 
                 var guidArray = new byte[16];
-                BitConverter.GetBytes(input[6..10].IntToHostOrder()).CopyTo(guidArray, 0);
-                BitConverter.GetBytes(input[10..12].ShortToHostOrder()).CopyTo(guidArray, 4);
-                BitConverter.GetBytes(input[12..14].ShortToHostOrder()).CopyTo(guidArray, 6);
+                input[6..10].Reverse().ToArray().CopyTo(guidArray, 0);
+                input[10..12].Reverse().ToArray().CopyTo(guidArray, 4);
+                input[12..14].Reverse().ToArray().CopyTo(guidArray, 6);
                 input[14..22].CopyTo(guidArray, 8);
                 GameId = new Guid(guidArray);
 
@@ -83,10 +85,10 @@ namespace Sungaila.NewDark.Core
                 byteList.Add(Reserved3);
 
                 var guidArray = GameId.ToByteArray();
-                BitConverter.GetBytes(guidArray[0..4].IntToHostOrder()).CopyTo(guidArray, 0);
-                BitConverter.GetBytes(guidArray[4..6].ShortToHostOrder()).CopyTo(guidArray, 4);
-                BitConverter.GetBytes(guidArray[6..8].ShortToHostOrder()).CopyTo(guidArray, 6);
-                byteList.AddRange(guidArray);
+                byteList.AddRange(guidArray[0..4].Reverse());
+                byteList.AddRange(guidArray[4..6].Reverse());
+                byteList.AddRange(guidArray[6..8].Reverse());
+                byteList.AddRange(guidArray[8..16]);
 
                 byteList.AddRange(Encoding.ASCII.GetBytes(ServerName[..Math.Min(ServerName.Length, 31)] + '\0'));
                 byteList.AddRange(Encoding.ASCII.GetBytes(MapName[..Math.Min(MapName.Length, 31)] + '\0'));
@@ -284,16 +286,16 @@ namespace Sungaila.NewDark.Core
             Denied = 1 << 2
         }
 
-        public readonly record struct WebSocketServerInfo(string ServerName, string MapName, string Address, WebSocketServerStatus Status, ushort? PlayerCount, ushort? MaxPlayers)
+        public readonly record struct WebSocketServerInfo(string ServerName, string MapName, string Address, WebSocketServerStatus Status, uint? CurrentPlayers, uint? MaxPlayers)
         {
             public string? Players
             {
                 get
                 {
-                    if (Status.HasFlag(WebSocketServerStatus.Denied) || PlayerCount == null || MaxPlayers == null)
+                    if (Status.HasFlag(WebSocketServerStatus.Denied) || CurrentPlayers == null || MaxPlayers == null)
                         return null;
 
-                    return $"{PlayerCount}/{MaxPlayers}";
+                    return $"{CurrentPlayers}/{MaxPlayers}";
                 }
             }
 
@@ -313,6 +315,112 @@ namespace Sungaila.NewDark.Core
 
                     return string.Join(", ", flags);
                 }
+            }
+        }
+
+        public readonly record struct SessionEnumerationQuery() : ISerializableNetworkOrder
+        {
+            public byte[] ToByteArray()
+            {
+                var byteList = new List<byte>();
+
+                byteList.Add(0x00); // LeadByte: 00 = Session Packet
+                byteList.Add(0x02); // CommandByte: 02 = Enumeration Query
+                byteList.AddRange(new byte[] { 0x67, 0xD1 }.ToNetworkOrder()); // EnumPayload: 26577 (0x67D1)
+                byteList.Add(0x01); // QueryType: This query contains an ApplicationGUID field
+                byteList.AddRange(Thief2GameId.ToByteArray()); // ApplicationGUID: {00F682D7-AB11-4540-9FC2-C43E97358C73}
+
+                return byteList.ToArray();
+            }
+        }
+
+        [Flags]
+        public enum ApplicationDescFlags : uint
+        {
+            /// <summary>
+            /// A client/server game session. If clear, a peer-to-peer game session.
+            /// </summary>
+            DPNSESSION_CLIENT_SERVER = 0x00000001,
+
+            /// <summary>
+            /// Host migration is allowed.
+            /// </summary>
+            DPNSESSION_MIGRATE_HOST = 0x00000004,
+
+            /// <summary>
+            /// Not using DirectPlay Name Server (DPNSVR) (game session is not enumerable via well-known port 6073).
+            /// </summary>
+            DPNSESSION_NODPNSVR = 0x00000040,
+
+            /// <summary>
+            /// Password required to join game session.
+            /// </summary>
+            DPNSESSION_REQUIREPASSWORD = 0x00000080,
+
+            /// <summary>
+            /// Enumerations are not allowed. This flag will never be set in an EnumResponse message.
+            /// </summary>
+            DPNSESSION_NOENUMS = 0x00000100,
+
+            /// <summary>
+            /// Fast message signing is in use. For details about fast message signing, see [MC-DPL8R].
+            /// </summary>
+            DPNSESSION_FAST_SIGNED = 0x00000200,
+
+            /// <summary>
+            /// Full message signing is in use. For details about full message signing, see [MC-DPL8R].
+            /// </summary>
+            DPNSESSION_FULL_SIGNED = 0x00000400
+        }
+
+        public readonly record struct SessionEnumerationResponse(
+            byte LeadByte,
+            byte CommandByte,
+            ushort EnumPayload,
+            uint ReplyOffset,
+            uint ResponseSize,
+            uint ApplicationDescSize,
+            ApplicationDescFlags ApplicationDescFlags,
+            uint MaxPlayers,
+            uint CurrentPlayers,
+            uint SessionNameOffset,
+            uint SessionNameSize,
+            uint PasswordOffset,
+            uint PasswordSize,
+            uint ReservedDataOffset,
+            uint ReservedDataSize,
+            uint ApplicationReservedDataOffset,
+            uint ApplicationReservedDataSize,
+            Guid ApplicationInstanceGUID,
+            Guid ApplicationGUID
+            ) : ISerializableNetworkOrder
+        {
+            public SessionEnumerationResponse(byte[] input) : this(default, default, default, default, default, default, default, default, default, default, default, default, default, default, default, default, default, default, default)
+            {
+                LeadByte = input[0]; // LeadByte: 00 = Session Packet
+                CommandByte = input[1]; // CommandByte: 3 (0x3)
+                EnumPayload = (ushort)input[2..4].DirectPlayShortToHostOrder(); // EnumPayload: 26577 (0x67D1)
+                ReplyOffset = (uint)input[4..8].DirectPlayIntToHostOrder(); // ReplyOffset: 0 (0x0)
+                ResponseSize = (uint)input[8..12].DirectPlayIntToHostOrder(); // ResponseSize: 0 bytes
+                ApplicationDescSize = (uint)input[12..16].DirectPlayIntToHostOrder(); // ApplicationDescSize: 0x50, MUST be set to 0x00000050
+                ApplicationDescFlags = (ApplicationDescFlags)input[16..20].DirectPlayIntToHostOrder(); // ApplicationDescFlags: 64 (0x40)
+                MaxPlayers = (uint)input[20..24].DirectPlayIntToHostOrder(); // MaxPlayers: 8 (0x8)
+                CurrentPlayers = (uint)input[24..28].DirectPlayIntToHostOrder(); // CurrentPlayers
+                SessionNameOffset = (uint)input[28..32].DirectPlayIntToHostOrder(); // SessionNameOffset: 88 (0x58)
+                SessionNameSize = (uint)input[32..36].DirectPlayIntToHostOrder(); // SessionNameSize: 2 bytes
+                PasswordOffset = (uint)input[36..40].DirectPlayIntToHostOrder(); // PasswordOffset: 0 (0x0)
+                PasswordSize = (uint)input[40..44].DirectPlayIntToHostOrder(); // PasswordSize: 0 bytes
+                ReservedDataOffset = (uint)input[44..48].DirectPlayIntToHostOrder(); // ReservedDataOffset: 0 (0x0)
+                ReservedDataSize = (uint)input[48..52].DirectPlayIntToHostOrder(); // ReservedDataSize: 0 bytes
+                ApplicationReservedDataOffset = (uint)input[52..56].DirectPlayIntToHostOrder(); // ApplicationReservedDataOffset: 0 (0x0)
+                ApplicationReservedDataSize = (uint)input[56..60].DirectPlayIntToHostOrder(); // ApplicationReservedDataSize: 0 bytes
+                ApplicationInstanceGUID = input[60..76].DirectPlayGuidToHostOrder(); //ApplicationInstanceGUID
+                ApplicationGUID = input[76..92].DirectPlayGuidToHostOrder();// ApplicationGUID: {00F682D7-AB11-4540-9FC2-C43E97358C73}
+            }
+
+            public byte[] ToByteArray()
+            {
+                throw new NotImplementedException();
             }
         }
     }

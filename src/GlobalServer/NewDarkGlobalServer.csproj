@@ -9,8 +9,8 @@
     <ApplicationIcon>App.ico</ApplicationIcon>
     <DockerDefaultTargetOS>Linux</DockerDefaultTargetOS>
     <Configurations>Debug;Release;ReleaseSigned</Configurations>
-    <VersionPrefix>1.3.3</VersionPrefix>
-    <VersionSuffix></VersionSuffix>
+    <VersionPrefix>1.4.0</VersionPrefix>
+    <VersionSuffix>preview</VersionSuffix>
     <PublishAot>true</PublishAot>
   </PropertyGroup>
 

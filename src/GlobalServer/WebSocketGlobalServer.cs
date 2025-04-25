@@ -2,7 +2,6 @@
 using System;
 using System.Collections.Generic;
 using System.Net;
-using System.Net.Sockets;
 using System.Text.Json;
 using System.Threading;
 using System.Threading.Tasks;
@@ -12,17 +11,21 @@ using static Sungaila.NewDark.GlobalServer.Logging;
 
 namespace Sungaila.NewDark.GlobalServer
 {
-    internal sealed class WebSocketGlobalServer
+    /// <summary>
+    /// Represents a WebSocket server for the global server (non-game clients).
+    /// </summary>
+    /// <param name="Port">The port the WebSocket uses.</param>
+    internal sealed class WebSocketGlobalServer(int Port)
     {
         public async Task RunAsync(CancellationToken cancellationToken)
         {
-            var localEndPoint = new IPEndPoint(IPAddress.Loopback, 5200);
+            var localEndPoint = new IPEndPoint(IPAddress.Loopback, Port);
 
             LogWriteLine($"Bind {localEndPoint} and await WebSocket connections");
 
             try
             {
-                using var server = new WatsonWsServer(localEndPoint.Address.ToString(), localEndPoint.Port);
+                using var server = new WatsonWsServer(localEndPoint.Address.ToString(), localEndPoint.Port, false);
 
                 server.ClientConnected += async (s, e) =>
                 {
@@ -41,13 +44,23 @@ namespace Sungaila.NewDark.GlobalServer
                                 status |= WebSocketServerStatus.Closed;
                             }
 
+                            if (con.LastEnumResponse == null)
+                            {
+                                status |= WebSocketServerStatus.Denied;
+                            }
+
+                            var maskedIp = con.InitialEndPoint.Address.MapToIPv4().ToString();
+                            var split = maskedIp.Split('.');
+                            maskedIp = string.Join('.', split[..^2]);
+                            maskedIp += ".***.***";
+
                             list.Add(new WebSocketServerInfo(
                                 con.ServerInfo!.Value.ServerName,
                                 con.ServerInfo!.Value.MapName,
-                                con.InitialEndPoint.Address.ToString(),
+                                maskedIp,
                                 status,
-                                null,
-                                null));
+                                con.LastEnumResponse?.CurrentPlayers,
+                                con.LastEnumResponse?.MaxPlayers));
                         }
                     }
 

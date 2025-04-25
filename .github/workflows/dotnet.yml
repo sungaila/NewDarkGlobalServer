@@ -19,16 +19,16 @@ jobs:
       with:
         dotnet-version: 9.x
     - name: Restore
-      run: dotnet restore NewDarkGlobalServer.sln
+      run: dotnet restore src/GlobalServer/NewDarkGlobalServer.csproj
     - name: Build
-      run: dotnet build NewDarkGlobalServer.sln --no-restore
+      run: dotnet build src/GlobalServer/NewDarkGlobalServer.csproj --no-restore
     - name: Publish
-      run: dotnet publish NewDarkGlobalServer.sln -p:PublishProfile=Properties/PublishProfiles/linux-x64.pubxml
+      run: dotnet publish src/GlobalServer/NewDarkGlobalServer.csproj -p:PublishProfile=Properties/PublishProfiles/linux-x64.pubxml
     - name: Upload
       uses: actions/upload-artifact@main
       with:
         name: Binaries (linux-x64)
-        path: src/bin/Publish/linux-x64
+        path: src/GlobalServer/bin/Publish/linux-x64
         if-no-files-found: error
     - name: docker compose build
       run: docker compose build

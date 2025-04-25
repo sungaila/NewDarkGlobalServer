@@ -41,6 +41,11 @@ namespace Sungaila.NewDark.GlobalServer
         private const ushort SupportedProtocolVersion = 1100;
 
         /// <summary>
+        /// The port used for DirectPlay 8.
+        /// </summary>
+        private const ushort DirectPlayPort = 5198;
+
+        /// <summary>
         /// The interval for <see cref="HandleCleanupAsync(CancellationToken)"/> to run.
         /// </summary>
         private readonly TimeSpan CleanupInterval = TimeSpan.FromSeconds(10);
@@ -213,6 +218,7 @@ namespace Sungaila.NewDark.GlobalServer
                             ConnectionsWriteLine(_connections.Values);
 
                             await NotifyServerAddOrUpdate(connection, cancellationToken);
+                            await DirectPlayEnumQueryAsync(connection, cancellationToken);
                             break;
 
                         case MessageType.HeartbeatMinimal:
@@ -230,6 +236,8 @@ namespace Sungaila.NewDark.GlobalServer
 
                             if (ShowHeartbeatMinimal)
                                 LogWriteLine(connection.Id, typeof(HeartbeatMinimalMessage).Name, $"received from {socket.RemoteEndPoint}");
+
+                            await DirectPlayEnumQueryAsync(connection, cancellationToken);
                             break;
 
                         // this message seems to be unused
@@ -437,6 +445,26 @@ namespace Sungaila.NewDark.GlobalServer
                 ConnectionsWriteLine(_connections.Values);
 
             CleanDelayed(connection.Id);
+        }
+
+        private static async Task DirectPlayEnumQueryAsync(Connection connection, CancellationToken cancellationToken)
+        {
+            try
+            {
+                using var client = new UdpClient(connection.InitialEndPoint.Address.ToString(), DirectPlayPort);
+
+                var request = new SessionEnumerationQuery();
+                await client.SendAsync(request.ToByteArray(), cancellationToken);
+
+                var response = await client.ReceiveAsync(cancellationToken);
+                var parsed = new SessionEnumerationResponse(response.Buffer);
+
+                connection.LastEnumResponse = parsed;
+            }
+            catch
+            {
+                connection.LastEnumResponse = null;
+            }
         }
     }
 }

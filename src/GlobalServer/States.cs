@@ -86,6 +86,11 @@ namespace Sungaila.NewDark.GlobalServer
             public ServerInfo? ServerInfo { get; set; } = null;
 
             /// <summary>
+            /// The last Session Enumeration Response received (DirectPlay 8).
+            /// </summary>
+            public SessionEnumerationResponse? LastEnumResponse { get; set; } = null;
+
+            /// <summary>
             /// If this connection is closing or closed.
             /// </summary>
             public bool IsDisconnected => Status == ConnectionStatus.Closed || Socket == null || !Socket.Connected;

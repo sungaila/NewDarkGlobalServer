@@ -2,7 +2,7 @@
   "profiles": {
     "NewDarkGlobalServer": {
       "commandName": "Project",
-      "commandLineArgs": "--verbose --showheartbeatminimal"
+      "commandLineArgs": "--websocket --verbose --showheartbeatminimal"
     },
     "WSL": {
       "commandName": "WSL2",

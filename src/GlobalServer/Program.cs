@@ -1,15 +1,11 @@
 ﻿using Mono.Options;
-using Sungaila.NewDark.Core;
 using System;
+using System.Collections.Generic;
 using System.Globalization;
-using System.Linq;
-using System.Net;
-using System.Net.Sockets;
+using System.Reflection;
 using System.Threading;
 using System.Threading.Tasks;
-using static Sungaila.NewDark.Core.Messages;
 using static Sungaila.NewDark.GlobalServer.Logging;
-using static Sungaila.NewDark.GlobalServer.States;
 
 namespace Sungaila.NewDark.GlobalServer
 {
@@ -24,6 +20,8 @@ namespace Sungaila.NewDark.GlobalServer
 
             bool showHelp = false;
             int port = 5199;
+            bool websocket = false;
+            int websocketPort = 5200;
             TimeSpan unidentifiedConnectionTimeout = TimeSpan.FromSeconds(10);
             TimeSpan serverConnectionTimeout = TimeSpan.FromMinutes(3);
             TimeSpan clientConnectionTimeout = TimeSpan.FromHours(1);
@@ -32,6 +30,8 @@ namespace Sungaila.NewDark.GlobalServer
 
             var options = new OptionSet {
                 { "p|port=", $"Sets the port for this global server. Default is {port.ToString(CultureInfo.InvariantCulture)}.", (int p) => port = p },
+                { "w|websocket=", $"Activates the optional WebSocket for non-game clients. Deactivated by default.", b => websocket = b != null },
+                { "m|websocketport=", $"Sets the port for the WebSocket. Default is {websocketPort.ToString(CultureInfo.InvariantCulture)}.", (int p) => websocketPort = p },
                 { "s|timeoutserver=", $"Sets timeout for game servers in seconds. Default is {serverConnectionTimeout.TotalSeconds.ToString(CultureInfo.InvariantCulture)} seconds ({serverConnectionTimeout:c}).", (int s) => serverConnectionTimeout = TimeSpan.FromSeconds(s) },
                 { "c|timeoutclient=", $"Sets timeout for game clients in seconds. Default is {clientConnectionTimeout.TotalSeconds.ToString(CultureInfo.InvariantCulture)} seconds ({clientConnectionTimeout:c}).", (int c) => clientConnectionTimeout = TimeSpan.FromSeconds(c) },
                 { "u|timeoutunidentified=", $"Sets timeout for connections to indentify as client or server in seconds. Default is {unidentifiedConnectionTimeout.TotalSeconds.ToString(CultureInfo.InvariantCulture)} seconds ({unidentifiedConnectionTimeout:c}).", (int u) => unidentifiedConnectionTimeout = TimeSpan.FromSeconds(u) },
@@ -63,7 +63,8 @@ namespace Sungaila.NewDark.GlobalServer
                 return;
             }
 
-            Console.WriteLine($"Starting {typeof(Program).Assembly.GetName().Name} {typeof(Program).Assembly.GetName().Version}");
+            var infoVersion = Assembly.GetExecutingAssembly()?.GetCustomAttribute<AssemblyInformationalVersionAttribute>()?.InformationalVersion;
+            Console.WriteLine($"Starting {typeof(Program).Assembly.GetName().Name} {infoVersion ?? typeof(Program).Assembly.GetName().Version?.ToString()}");
 
             var cts = new CancellationTokenSource();
             Console.CancelKeyPress += (_, e) =>
@@ -76,13 +77,22 @@ namespace Sungaila.NewDark.GlobalServer
                 port,
                 unidentifiedConnectionTimeout,
                 serverConnectionTimeout,
-                clientConnectionTimeout, 
+                clientConnectionTimeout,
                 showHeartbeatMinimal,
                 hideInvalidMessageTypes);
 
-            _webSocket = new WebSocketGlobalServer();
+            var tasks = new List<Task>
+            {
+                _tcp.RunAsync(cts.Token)
+            };
 
-            await Task.WhenAll(_tcp.RunAsync(cts.Token), _webSocket.RunAsync(cts.Token));
+            if (websocket)
+            {
+                _webSocket = new WebSocketGlobalServer(websocketPort);
+                tasks.Add(_webSocket.RunAsync(cts.Token));
+            }
+
+            await Task.WhenAll(tasks);
         }
     }
 }

@@ -7,6 +7,8 @@
     <RootNamespace>Sungaila.NewDark.WebClient</RootNamespace>
     <ImplicitUsings>enable</ImplicitUsings>
     <ServiceWorkerAssetsManifest>service-worker-assets.js</ServiceWorkerAssetsManifest>
+    <VersionPrefix>1.4.0</VersionPrefix>
+    <VersionSuffix>preview</VersionSuffix>
   </PropertyGroup>
 
   <ItemGroup>
