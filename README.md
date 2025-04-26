@@ -17,7 +17,6 @@ A global server providing a game server list for [Thief 2](https://en.wikipedia.
 global_server_name thief2.sungaila.de
 global_server_port 5199
 ```
-6. Read the text file `mp_release_notes.txt` for more information.
 7. Enjoy! Start the game with `Thief2MP.exe`. Windows might prompt you to install [DirectPlay](https://en.wikipedia.org/wiki/DirectPlay) on first launch.
     - Select `Multiplayer` and then `View Server List` to see all running game servers.
     - Host your own game with `Host a game` (UDP port `5198`). You will show up in the server list if clients can connect to you. If your game shows `Connected to global server.`, **but others cannot see you in the global server list**, then no connection can be established between your server and the clients (firewall, NAT, IPv4-only, other problems).
