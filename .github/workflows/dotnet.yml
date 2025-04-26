@@ -18,6 +18,7 @@ jobs:
       uses: actions/setup-dotnet@main
       with:
         dotnet-version: 9.x
+        dotnet-quality: 'ga'
     - name: Restore
       run: dotnet restore src/GlobalServer/NewDarkGlobalServer.csproj
     - name: Build
