@@ -38,7 +38,7 @@ jobs:
       - name: Restore
         run: dotnet restore src/WebClient/WebClient.csproj
       - name: Publish
-        run: dotnet publish src/WebClient/WebClient.csproj -c Release -p:PublishProfile=src/WebClient/Properties/PublishProfiles/PublishSite.pubxml -p:VersionSuffix=ci --no-restore
+        run: dotnet build src/WebClient/WebClient.csproj -c Release -p:PublishProfile=src/WebClient/Properties/PublishProfiles/PublishSite.pubxml -p:VersionSuffix=ci -p:DeployOnBuild=true --no-restore
       - name: Create .nojekyll file
         run: touch src/WebClient/bin/Publish/wwwroot/.nojekyll
       - name: Update service-worker-assets.js hashes
