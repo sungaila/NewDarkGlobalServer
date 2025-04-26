@@ -25,8 +25,8 @@ jobs:
         with:
           dotnet-version: 9.x
           dotnet-quality: 'ga'
-      - name: Setup .NET workload wasm-tools
-        run: dotnet workload install wasm-tools
+      - name: dotnet workload restore
+        run: dotnet workload restore src/WebClient/WebClient.csproj
       - name: Update relative paths
         working-directory: src/WebClient/wwwroot
         run: |

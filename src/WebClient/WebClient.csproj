@@ -24,6 +24,7 @@
     <WarningsAsErrors>nullable</WarningsAsErrors>
     <NoWarn>CA1416;CS8002</NoWarn>
     <SignAssembly>True</SignAssembly>
+    <UserSecretsId>3ac94bdb-7828-4f2f-8fb0-c99dc50d9169</UserSecretsId>
   </PropertyGroup>
 
   <!-- Debug builds -->
