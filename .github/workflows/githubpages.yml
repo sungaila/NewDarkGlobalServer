@@ -40,9 +40,9 @@ jobs:
       - name: Publish
         run: dotnet publish src/WebClient/WebClient.csproj -c Release -p:PublishProfile=src/WebClient/Properties/PublishProfiles/PublishSite.pubxml -p:VersionSuffix=ci --no-restore
       - name: Create .nojekyll file
-        run: touch src/WebClient/bin/Release/net9.0/publish/wwwroot/.nojekyll
+        run: touch src/WebClient/bin/Publish/wwwroot/.nojekyll
       - name: Update service-worker-assets.js hashes
-        working-directory: src/WebClient/bin/Release/net9.0/publish/wwwroot
+        working-directory: src/WebClient/bin/Publish/wwwroot
         if: false
         run: |
           jsFile=$(<service-worker-assets.js)
@@ -74,7 +74,7 @@ jobs:
       - name: Upload pages artifact
         uses: actions/upload-pages-artifact@main
         with:
-          path: src/WebClient/bin/Release/net9.0/publish/wwwroot
+          path: src/WebClient/bin/Publish/wwwroot
   deploy:
     name: Deploy
     needs: publish
