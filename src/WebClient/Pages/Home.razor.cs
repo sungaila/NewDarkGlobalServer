@@ -46,7 +46,7 @@ namespace Sungaila.NewDark.WebClient.Pages
 
                 try
                 {
-                    await client.ConnectAsync(new Uri($"wss://{Model.GlobalServerName}:{Model.GlobalServerPort}"), CancellationToken.None);
+                    await client.ConnectAsync(new Uri(Model.GlobalServerAddress), CancellationToken.None);
                     var buffer = new ArraySegment<byte>(new byte[1024]);
                     var result = await client.ReceiveAsync(buffer, CancellationToken.None);
                     var message = System.Text.Encoding.UTF8.GetString(buffer.Array, 0, result.Count);
@@ -55,11 +55,13 @@ namespace Sungaila.NewDark.WebClient.Pages
 
                     Model.Servers.AddRange(obj);
 
-                    Model.StatusMessage = null;
+                    Model.StatusMessage = Model.Servers.Count == 0
+                        ? "No game servers found."
+                        : null;
                 }
                 catch (Exception ex)
                 {
-                    Model.StatusMessage = ex.Message;
+                    Model.StatusMessage = $"Failed to connect to Global Server:\n{ex.Message}";
                 }
                 finally
                 {
@@ -67,10 +69,10 @@ namespace Sungaila.NewDark.WebClient.Pages
                 }
             }
         }
-        
+
         private void FilterChanged(ChangeEventArgs args)
         {
-            
+
         }
     }
 }

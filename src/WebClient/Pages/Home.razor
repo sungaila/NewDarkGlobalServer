@@ -3,8 +3,7 @@
 
 <PageTitle>Home</PageTitle>
 
-<InputText @bind-Value="Model.GlobalServerName" id="globalserveraddress" autocomplete="on" placeholder="Address" size="20" style="position: absolute; left: 83px; top: 65px;" />
-<InputNumber @bind-Value="Model.GlobalServerPort" id="globalserverport" min="0" max="65535" step="1" autocomplete="on" placeholder="Port" size="6" style="position: absolute; left: 258px; top: 65px;" />
+<InputText @bind-Value="Model.GlobalServerAddress" id="globalserveraddress" autocomplete="on" placeholder="WebSocket address of the Global Server" size="33" style="position: absolute; left: 83px; top: 65px;" />
 
 <div style="position: absolute; left: 345px; top: 65px; font-size: 10px; display: flex; align-items: center;">
     <InputCheckbox @bind-Value="Model.ShowClosed" id="showclosed" @onchange="FilterChanged" />
@@ -49,7 +48,7 @@
 @if (Model.StatusMessage != null)
 {
     <div style="position: absolute; left: 100px; right: 100px; top: 110px; bottom: 140px; display: flex; align-items: center;" class="container">
-        <p style="width: 100%; text-align: center;">@Model.StatusMessage</p>
+        <p style="width: 100%; text-align: center; white-space: pre-line;">@Model.StatusMessage</p>
     </div>
 }
 
