@@ -49,9 +49,9 @@ namespace Sungaila.NewDark.WebClient.Pages
                     await client.ConnectAsync(new Uri(Model.GlobalServerAddress), CancellationToken.None);
                     var buffer = new ArraySegment<byte>(new byte[1024]);
                     var result = await client.ReceiveAsync(buffer, CancellationToken.None);
-                    var message = System.Text.Encoding.UTF8.GetString(buffer.Array, 0, result.Count);
+                    var message = System.Text.Encoding.UTF8.GetString(buffer.Array!, 0, result.Count);
 
-                    var obj = JsonSerializer.Deserialize(message, SourceGenerationContext.Default.ListWebSocketServerInfo);
+                    var obj = JsonSerializer.Deserialize(message, SourceGenerationContext.Default.ListWebSocketServerInfo)!;
 
                     Model.Servers.AddRange(obj);
 
