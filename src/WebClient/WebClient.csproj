@@ -57,10 +57,10 @@
     <Content Update="wwwroot\404.html">
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
     </Content>
-    <Content Update="wwwroot\background.png">
+    <Content Update="wwwroot\images\background.png">
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
     </Content>
-    <Content Update="wwwroot\carleton.ttf">
+    <Content Update="wwwroot\fonts\carleton.ttf">
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
     </Content>
     <Content Update="wwwroot\favicon.ico">
