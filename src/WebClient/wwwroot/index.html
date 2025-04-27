@@ -40,16 +40,14 @@
         }(window.location))
     </script>
     <!-- End Single Page Apps for GitHub Pages -->
-</head>
 
-<body>
     <style>
         @font-face {
             font-family: 'Carleton';
-    src: url('fonts/carleton.ttf') format('truetype');
+            src: url('fonts/carleton.ttf') format('truetype');
         }
 
-        body {
+        html {
             color: #ffffce;
             font-family: 'Carleton';
             background: #010000;
@@ -59,9 +57,26 @@
             background-position: center center;
             background-size: contain;
             color-scheme: dark;
+            margin: 0;
+            padding: 0;
+            height: 100%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        body, html {
+            margin: 0;
+            padding: 0;
+            height: 100%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
         }
     </style>
+</head>
 
+<body>
     <div id="app">
         <main>
             <img src="icon-512.png" style="position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); width: 4rem; height: 4rem" alt="PDFtoImage Logo" />
@@ -70,34 +85,6 @@
                 <circle r="40%" cx="50%" cy="50%" />
             </svg>
         </main>
-
-        <script>
-            function scaleToFit() {
-                const container = document.getElementById('app');
-                const vw = window.innerWidth;
-                const vh = window.innerHeight;
-
-                const baseWidth = 640;
-                const baseHeight = 480;
-
-                const scaleX = vw / baseWidth;
-                const scaleY = vh / baseHeight;
-                const scale = Math.min(scaleX, scaleY);
-
-                const scaledWidth = baseWidth * scale;
-                const scaledHeight = baseHeight * scale;
-
-                const left = (vw - scaledWidth) / 2;
-                const top = (vh - scaledHeight) / 2;
-
-                container.style.transform = `scale(${scale})`;
-                container.style.left = `${left}px`;
-                container.style.top = `${top}px`;
-            }
-
-            window.addEventListener('resize', scaleToFit);
-            window.addEventListener('load', scaleToFit);
-        </script>
     </div>
 
     <div id="blazor-error-ui" style="color: black; font-family: sans-serif;">

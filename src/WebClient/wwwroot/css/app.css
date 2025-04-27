@@ -86,13 +86,6 @@ code {
     text-align: start;
 }
 
-#app {
-    position: absolute;
-    width: 640px;
-    height: 480px;
-    transform-origin: top left;
-}
-
 a {
     color: #399510;
     text-decoration: none;

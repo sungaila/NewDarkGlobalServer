@@ -1,4 +1,5 @@
-﻿using static Sungaila.NewDark.Core.Messages;
+﻿using System.Reflection;
+using static Sungaila.NewDark.Core.Messages;
 
 namespace Sungaila.NewDark.WebClient.Models
 {
@@ -23,5 +24,7 @@ namespace Sungaila.NewDark.WebClient.Models
                     .Where(s => ShowDenied || !s.Status.HasFlag(WebSocketServerStatus.Denied));
             }
         }
+
+        public string InformationalVersion { get; } = Assembly.GetExecutingAssembly()?.GetCustomAttribute<AssemblyInformationalVersionAttribute>()?.InformationalVersion ?? string.Empty;
     }
 }
