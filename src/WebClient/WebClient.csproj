@@ -1,4 +1,4 @@
-<Project Sdk="Microsoft.NET.Sdk.BlazorWebAssembly">
+﻿<Project Sdk="Microsoft.NET.Sdk.BlazorWebAssembly">
 
   <PropertyGroup>
     <TargetFramework>net9.0</TargetFramework>
@@ -9,7 +9,7 @@
     <ImplicitUsings>enable</ImplicitUsings>
     <ServiceWorkerAssetsManifest>service-worker-assets.js</ServiceWorkerAssetsManifest>
     <VersionPrefix>1.4.0</VersionPrefix>
-    <VersionSuffix>preview</VersionSuffix>
+    <VersionSuffix></VersionSuffix>
     <RunAOTCompilation>true</RunAOTCompilation>
     <WasmNativeStrip>true</WasmNativeStrip>
     <PublishTrimmed>true</PublishTrimmed>

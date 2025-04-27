@@ -11,6 +11,7 @@ on:
 
 jobs:
   build:
+    name: Build
     runs-on: ubuntu-latest
     steps:
     - uses: actions/checkout@main
@@ -24,12 +25,17 @@ jobs:
     - name: Build
       run: dotnet build src/GlobalServer/NewDarkGlobalServer.csproj --no-restore
     - name: Publish
-      run: dotnet publish src/GlobalServer/NewDarkGlobalServer.csproj -p:PublishProfile=Properties/PublishProfiles/linux-x64.pubxml
+      run: dotnet publish src/GlobalServer/NewDarkGlobalServer.csproj -p:PublishProfile=Properties/PublishProfiles/linux-x64.pubxml --no-restore
     - name: Upload
       uses: actions/upload-artifact@main
       with:
         name: Binaries (linux-x64)
         path: src/GlobalServer/bin/Publish/linux-x64
         if-no-files-found: error
+  docker:
+    name: Docker
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@main
     - name: docker compose build
       run: docker compose build

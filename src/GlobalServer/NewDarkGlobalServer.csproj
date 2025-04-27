@@ -10,7 +10,7 @@
     <DockerDefaultTargetOS>Linux</DockerDefaultTargetOS>
     <Configurations>Debug;Release;ReleaseSigned</Configurations>
     <VersionPrefix>1.4.0</VersionPrefix>
-    <VersionSuffix>preview</VersionSuffix>
+    <VersionSuffix></VersionSuffix>
     <PublishAot>true</PublishAot>
   </PropertyGroup>
 
