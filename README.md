@@ -36,7 +36,9 @@ global_server_port 5199
 3. You can now select `View Server List` in the Multiplayer menu. It will show all servers that are connected to the global server.
 
 > [!NOTE]
-> If you are hosting a game and it says `Connected to global server`, but others do not see you in the server list, then there is a network connection issue between you and your clients. Others join your game via the UDP port `5198` and this could be blocked by a firewall, NAT problems or something else. Also note that only IPv4 is supported (IPv6 is not).
+> If you are hosting a game and it says `Connected to global server`, but others do not see you in the server list, then there is a network connection issue between you and your clients.
+>
+> Others join your game via the UDP port `5198` and this could be blocked by a firewall, NAT problems or something else. Also note that only IPv4 is supported (IPv6 is not).
 
 <p align="center"><img src="https://raw.githubusercontent.com/sungaila/NewDarkGlobalServer/refs/heads/master/etc/GlobalServerList.png" width="600" alt="Screenshot of the global server list"></p>
 
