@@ -1,70 +1,73 @@
-﻿using Mono.Options;
+﻿using Sungaila.NewDark.Core;
 using System;
-using System.Globalization;
+using System.Collections.Concurrent;
+using System.Collections.Generic;
 using System.Linq;
 using System.Net;
 using System.Net.Sockets;
 using System.Threading;
 using System.Threading.Tasks;
-using static NewDarkGlobalServer.Logging;
-using static NewDarkGlobalServer.Messages;
-using static NewDarkGlobalServer.States;
+using static Sungaila.NewDark.Core.Messages;
+using static Sungaila.NewDark.GlobalServer.Logging;
+using static Sungaila.NewDark.GlobalServer.States;
 
-namespace NewDarkGlobalServer
+namespace Sungaila.NewDark.GlobalServer
 {
-    public static partial class Program
+    /// <summary>
+    /// Represents a TCP socket server for the global server.
+    /// </summary>
+    /// <param name="Port">The port the global server uses.</param>
+    /// <param name="UnidentifiedConnectionTimeout">The timeout for connections have not sent requests yet.</param>
+    /// <param name="ServerConnectionTimeout">The timeout for game servers.</param>
+    /// <param name="ClientConnectionTimeout">The timeout for game clients.</param>
+    /// <param name="ShowHeartbeatMinimal">If <see cref="HeartbeatMinimalMessage"/> should be logged.</param>
+    /// <param name="HideInvalidMessageTypes">If failed connections due to invalid message types should be logged.</param>
+    internal sealed class TcpGlobalServer(
+        int Port,
+        TimeSpan UnidentifiedConnectionTimeout,
+        TimeSpan ServerConnectionTimeout,
+        TimeSpan ClientConnectionTimeout,
+        bool ShowHeartbeatMinimal,
+        bool HideInvalidMessageTypes)
     {
-        public static async Task Main(string[] args)
+        /// <summary>
+        /// The expected maximum message size.
+        /// </summary>
+        private const int NetworkBufferSize = 256;
+
+        /// <summary>
+        /// The supported protocol version.
+        /// </summary>
+        private const ushort SupportedProtocolVersion = 1100;
+
+        /// <summary>
+        /// The port used for DirectPlay 8.
+        /// </summary>
+        private const ushort DirectPlayPort = 5198;
+
+        /// <summary>
+        /// The interval for <see cref="HandleCleanupAsync(CancellationToken)"/> to run.
+        /// </summary>
+        private readonly TimeSpan CleanupInterval = TimeSpan.FromSeconds(10);
+
+        /// <summary>
+        /// A thread-safe collection of all connections.
+        /// </summary>
+        private readonly ConcurrentDictionary<string, Connection> _connections = new();
+
+        /// <summary>
+        /// Decides if the given <paramref name="socket"/> is still alive. This isn't 100% reliable though.
+        /// </summary>
+        /// <param name="socket">The socket given for the alive check.</param>
+        private static bool IsSocketAlive(Socket socket) => socket != null && socket.Connected && socket.Poll(1000, SelectMode.SelectRead) && socket.Available != 0;
+
+        public IEnumerable<Connection> ServerConnections => _connections.Values.Where(c => c.ServerInfo != null);
+
+        public async Task RunAsync(CancellationToken cancellationToken)
         {
-            Console.Title = "Thief 2 Multiplayer Global Server";
-
-            bool showHelp = false;
-
-            var options = new OptionSet {
-                { "p|port=", $"Sets the port for this global server. Default is {Port.ToString(CultureInfo.InvariantCulture)}.", (int p) => Port = p },
-                { "s|timeoutserver=", $"Sets timeout for game servers in seconds. Default is {ServerConnectionTimeout.TotalSeconds.ToString(CultureInfo.InvariantCulture)} seconds ({ServerConnectionTimeout:c}).", (int s) => ServerConnectionTimeout = TimeSpan.FromSeconds(s) },
-                { "c|timeoutclient=", $"Sets timeout for game clients in seconds. Default is {ClientConnectionTimeout.TotalSeconds.ToString(CultureInfo.InvariantCulture)} seconds ({ClientConnectionTimeout:c}).", (int c) => ClientConnectionTimeout = TimeSpan.FromSeconds(c) },
-                { "u|timeoutunidentified=", $"Sets timeout for connections to indentify as client or server in seconds. Default is {UnidentifiedConnectionTimeout.TotalSeconds.ToString(CultureInfo.InvariantCulture)} seconds ({UnidentifiedConnectionTimeout:c}).", (int u) => UnidentifiedConnectionTimeout = TimeSpan.FromSeconds(u) },
-                { "b|showheartbeatminimal", "Shows HeartbeatMinimal messages in the log. Each connected game server sends one every 10 seconds so the log may become cluttered.", b => ShowHeartbeatMinimal = b != null },
-                { "f|hidefailedconn", "Hides failed connections attempts (due to invalid or unknown messages) from the log.", f => HideInvalidMessageTypes = f != null },
-                { "t|printtimestamps", "Adds timestamps to the log output.", f => PrintTimeStamps = f != null },
-                { "v|verbose", "Shows more verbose messages in the log.", v => Verbose = v != null },
-                { "h|help", "Prints this helpful option list and exits.", h => showHelp = h != null },
-            };
-
-            try
-            {
-                options.Parse(args);
-            }
-            catch (OptionException ex)
-            {
-                ErrorWriteLine(default, ex.Message, "Use --help for more information.");
-                throw;
-            }
-
-            if (showHelp)
-            {
-                Console.WriteLine($"Usage: {typeof(Program).Assembly.GetName().Name} [options]");
-                Console.WriteLine("Starts a server providing a game server list for Thief 2 Multiplayer.");
-                Console.WriteLine();
-
-                Console.WriteLine("Options:");
-                options.WriteOptionDescriptions(Console.Out);
-                return;
-            }
-
-            Console.WriteLine($"Starting {typeof(Program).Assembly.GetName().Name} {typeof(Program).Assembly.GetName().Version}");
-
-            var cts = new CancellationTokenSource();
-            Console.CancelKeyPress += (_, e) =>
-            {
-                e.Cancel = true;
-                cts.Cancel();
-            };
-
             var localEndPoint = new IPEndPoint(IPAddress.Any, Port);
 
-            LogWriteLine($"Bind {localEndPoint} and await connections");
+            LogWriteLine($"Bind {localEndPoint} and await TCP connections");
 
             using var socket = new Socket(AddressFamily.InterNetwork, SocketType.Stream, ProtocolType.Tcp);
 
@@ -75,32 +78,32 @@ namespace NewDarkGlobalServer
             }
             catch (Exception ex)
             {
-                ErrorWriteLine(default, "Failed to bind");
+                ErrorWriteLine(default, "Failed to bind TCP");
                 ErrorWriteLine(default, ex.ToString());
                 throw;
             }
 
-            var cleanupTask = Task.Factory.StartNew(async () => await HandleCleanupAsync(cts.Token), cts.Token, TaskCreationOptions.LongRunning, TaskScheduler.Current);
+            var cleanupTask = Task.Factory.StartNew(async () => await HandleCleanupAsync(cancellationToken), cancellationToken, TaskCreationOptions.LongRunning, TaskScheduler.Current);
 
-            while (!cts.IsCancellationRequested)
+            while (!cancellationToken.IsCancellationRequested)
             {
                 try
                 {
-                    var clientSocket = await socket.AcceptAsync(cts.Token);
+                    var clientSocket = await socket.AcceptAsync(cancellationToken);
                     clientSocket.ReceiveBufferSize = NetworkBufferSize;
                     clientSocket.SendBufferSize = NetworkBufferSize;
 
                     if (_connections.TryGetValue(clientSocket.RemoteEndPoint!.ToString()!, out var existingConnection))
                     {
-                        await DisconnectAsync(existingConnection, cts.Token);
+                        await DisconnectAsync(existingConnection, cancellationToken);
                     }
 
                     var newConnection = new Connection(clientSocket);
                     _connections.TryAdd(newConnection.InitialEndPoint.ToString(), newConnection);
 
-                    LogWriteLineDelayed(newConnection.Id, "Connection accepted", $"for {clientSocket.RemoteEndPoint}");
+                    LogWriteLineDelayed(newConnection.Id, "Connection accepted (TCP)", $"for {clientSocket.RemoteEndPoint}");
 
-                    newConnection.Task = Task.Factory.StartNew(async () => await HandleConnectionAsync(clientSocket, newConnection, cts.Token), cts.Token, TaskCreationOptions.LongRunning, TaskScheduler.Current);
+                    newConnection.Task = Task.Factory.StartNew(async () => await HandleConnectionAsync(clientSocket, newConnection, cancellationToken), cancellationToken, TaskCreationOptions.LongRunning, TaskScheduler.Current);
                 }
                 catch (SocketException ex)
                 {
@@ -122,7 +125,7 @@ namespace NewDarkGlobalServer
             return;
         }
 
-        static async Task HandleConnectionAsync(Socket socket, Connection connection, CancellationToken cancellationToken = default)
+        private async Task HandleConnectionAsync(Socket socket, Connection connection, CancellationToken cancellationToken = default)
         {
             try
             {
@@ -215,6 +218,7 @@ namespace NewDarkGlobalServer
                             ConnectionsWriteLine(_connections.Values);
 
                             await NotifyServerAddOrUpdate(connection, cancellationToken);
+                            await DirectPlayEnumQueryAsync(connection, cancellationToken);
                             break;
 
                         case MessageType.HeartbeatMinimal:
@@ -232,6 +236,8 @@ namespace NewDarkGlobalServer
 
                             if (ShowHeartbeatMinimal)
                                 LogWriteLine(connection.Id, typeof(HeartbeatMinimalMessage).Name, $"received from {socket.RemoteEndPoint}");
+
+                            await DirectPlayEnumQueryAsync(connection, cancellationToken);
                             break;
 
                         // this message seems to be unused
@@ -322,7 +328,7 @@ namespace NewDarkGlobalServer
             }
         }
 
-        static async Task NotifyServerAddOrUpdate(Connection addedOrUpdatedServer, CancellationToken cancellationToken = default)
+        private async Task NotifyServerAddOrUpdate(Connection addedOrUpdatedServer, CancellationToken cancellationToken = default)
         {
             if (addedOrUpdatedServer.Status != ConnectionStatus.AwaitServerCommand || addedOrUpdatedServer.ServerInfo == null)
                 return;
@@ -334,7 +340,7 @@ namespace NewDarkGlobalServer
                 cancellationToken);
         }
 
-        static async Task NotifyServerRemoval(Connection removedServer, CancellationToken cancellationToken = default)
+        private async Task NotifyServerRemoval(Connection removedServer, CancellationToken cancellationToken = default)
         {
             if (removedServer.Status != ConnectionStatus.AwaitServerCommand || removedServer.ServerInfo == null || !removedServer.Socket.Connected)
                 return;
@@ -346,7 +352,7 @@ namespace NewDarkGlobalServer
                 cancellationToken);
         }
 
-        static async Task BroadcastToClients(IMessage message, CancellationToken cancellationToken = default)
+        private async Task BroadcastToClients(IMessage message, CancellationToken cancellationToken = default)
         {
             try
             {
@@ -374,7 +380,7 @@ namespace NewDarkGlobalServer
             }
         }
 
-        static async Task HandleCleanupAsync(CancellationToken cancellationToken = default)
+        private async Task HandleCleanupAsync(CancellationToken cancellationToken = default)
         {
             try
             {
@@ -426,7 +432,7 @@ namespace NewDarkGlobalServer
             catch (Exception ex) when (ex is TaskCanceledException || ex is OperationCanceledException) { }
         }
 
-        static async Task DisconnectAsync(Connection connection, CancellationToken cancellationToken = default)
+        private async Task DisconnectAsync(Connection connection, CancellationToken cancellationToken = default)
         {
             await NotifyServerRemoval(connection, cancellationToken);
             var wasConnected = connection.Socket.Connected;
@@ -439,6 +445,26 @@ namespace NewDarkGlobalServer
                 ConnectionsWriteLine(_connections.Values);
 
             CleanDelayed(connection.Id);
+        }
+
+        private static async Task DirectPlayEnumQueryAsync(Connection connection, CancellationToken cancellationToken)
+        {
+            try
+            {
+                using var client = new UdpClient(connection.InitialEndPoint.Address.ToString(), DirectPlayPort);
+
+                var request = new SessionEnumerationQuery();
+                await client.SendAsync(request.ToByteArray(), cancellationToken);
+
+                var response = await client.ReceiveAsync(cancellationToken);
+                var parsed = new SessionEnumerationResponse(response.Buffer);
+
+                connection.LastEnumResponse = parsed;
+            }
+            catch
+            {
+                connection.LastEnumResponse = null;
+            }
         }
     }
 }

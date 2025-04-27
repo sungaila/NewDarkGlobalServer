@@ -1,0 +1,38 @@
+{
+  "id": "NewDark.GlobalServer.WebClient",
+  "name": "NewDark GlobalServer WebClient",
+  "short_name": "GlobalServer Client",
+  "start_url": "./",
+  "background_color": "#010000",
+  "theme_color": "#391810",
+  "description": "Shows available game servers for Thief 2: The Metal Age.",
+  "lang": "en",
+  "categories": [ "games", "network", "utilities" ],
+  "display": "standalone",
+  "display_override": [
+    "standalone",
+    "minimal-ui",
+    "browser",
+    "fullscreen"
+  ],
+  "orientation": "any",
+  "prefer_related_applications": false,
+  "dir": "ltr",
+  "edge_side_panel": {
+    "preferred_width": 0
+  },
+  "icons": [
+    {
+      "src": "icon-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "icon-192.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any"
+    }
+  ]
+}

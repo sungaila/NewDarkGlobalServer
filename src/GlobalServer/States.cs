@@ -2,9 +2,9 @@
 using System.Net;
 using System.Net.Sockets;
 using System.Threading.Tasks;
-using static NewDarkGlobalServer.Messages;
+using static Sungaila.NewDark.Core.Messages;
 
-namespace NewDarkGlobalServer
+namespace Sungaila.NewDark.GlobalServer
 {
     public class States
     {
@@ -84,6 +84,11 @@ namespace NewDarkGlobalServer
             /// This identifies it as a game server and <see cref="Status"/> should be set to <see cref="ConnectionStatus.AwaitServerCommand"/>.
             /// </summary>
             public ServerInfo? ServerInfo { get; set; } = null;
+
+            /// <summary>
+            /// The last Session Enumeration Response received (DirectPlay 8).
+            /// </summary>
+            public SessionEnumerationResponse? LastEnumResponse { get; set; } = null;
 
             /// <summary>
             /// If this connection is closing or closed.
