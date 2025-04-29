@@ -102,3 +102,20 @@ a {
     a:active {
         color: #dedf42;
     }
+
+button.link-style {
+    all: unset;
+    color: #399510;
+    text-decoration: none;
+    cursor: pointer;
+    font: inherit;
+}
+
+    button.link-style:hover {
+        text-decoration: none;
+        color: #91fa50;
+    }
+
+    button.link-style:active {
+        color: #dedf42;
+    }
