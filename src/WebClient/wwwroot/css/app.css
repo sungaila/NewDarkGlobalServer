@@ -119,3 +119,33 @@ button.link-style {
     button.link-style:active {
         color: #dedf42;
     }
+
+th {
+    position: sticky;
+    top: 0;
+    text-align: left;
+    background: #010000;
+}
+
+    th.server-col {
+        width: 27%;
+    }
+
+    th.address-col {
+        width: 20%;
+    }
+
+    th.map-col {
+        width: 38%;
+    }
+
+    th.players-col {
+    }
+
+    th.status-col {
+    }
+
+.quickgrid th button {
+    all: unset;
+    cursor: pointer;
+}

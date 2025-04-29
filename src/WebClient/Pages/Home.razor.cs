@@ -1,8 +1,10 @@
 ﻿using Microsoft.AspNetCore.Components;
+using Microsoft.AspNetCore.Components.QuickGrid;
 using Sungaila.NewDark.Core;
 using Sungaila.NewDark.WebClient.Models;
 using System.Net.WebSockets;
 using System.Text.Json;
+using static Sungaila.NewDark.Core.Messages;
 
 namespace Sungaila.NewDark.WebClient.Pages
 {
@@ -15,6 +17,10 @@ namespace Sungaila.NewDark.WebClient.Pages
         private int _isRefreshing = 0;
 
         public HomeModel Model { get; set; } = new();
+
+        public GridSort<WebSocketServerInfo> PlayerSort = GridSort<WebSocketServerInfo>
+            .ByAscending(x => x.CurrentPlayers)
+            .ThenAscending(x => x.MaxPlayers);
 
         protected override async Task OnInitializedAsync()
         {

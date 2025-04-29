@@ -1,5 +1,6 @@
 ﻿@page "/"
 @using Sungaila.NewDark.Core
+@using Microsoft.AspNetCore.Components.QuickGrid
 
 <PageTitle>Thief 2 server list</PageTitle>
 
@@ -10,7 +11,8 @@
             max-height: 100vh;
             display: grid;
             grid-template-rows: auto 1fr auto 0;
-            gap: 5px;">
+            gap: 5px;
+            overflow-y: clip;">
         <div style="display: grid; grid-template-columns: 1fr auto auto; gap: 5px; margin: 10% 12% 0% 10%; font-size: clamp(0px, 2vh, 2vw)">
             <InputText @bind-Value="Model.GlobalServerAddress" id="globalserveraddress" autocomplete="on" type="url" placeholder="WebSocket address of the Global Server" required />
 
@@ -29,30 +31,17 @@
             </div>
         </div>
 
-        <div style="overflow-x: hidden; overflow-y: auto; margin: 0% 12% 10% 10%;">
-            <table id="serverlist" style="table-layout: fixed; width: 100%; font-size: clamp(0px, 1.8vw, 2.4vh);">
-                <thead>
-                    <tr style="font-weight: bold; text-align: left;">
-                        <th role="columnheader" style="position: sticky; top: 0; background: #010000; width: 25%;">Server</th>
-                        <th role="columnheader" style="position: sticky; top: 0; background: #010000; width: 20%;">Address</th>
-                        <th role="columnheader" style="position: sticky; top: 0; background: #010000; width: 35%;">Map</th>
-                        <th role="columnheader" style="position: sticky; top: 0; background: #010000;">Plrs</th>
-                        <th role="columnheader" style="position: sticky; top: 0; background: #010000;">Status</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    @foreach (var server in Model.ServersFiltered)
-                    {
-                        <tr>
-                            <td>@server.ServerName</td>
-                            <td>@server.Address</td>
-                            <td>@server.MapName</td>
-                            <td>@server.Players</td>
-                            <td>@server.StatusAsString</td>
-                        </tr>
-                    }
-                </tbody>
-            </table>
+        <div style="overflow-x: hidden; overflow-y: auto; margin: 0% 12% 10% 10%; font-size: clamp(0px, 1.8vw, 2.4vh);">
+            <QuickGrid Items="Model.ServersFiltered"
+                       ItemKey="(s => s.Address)">
+
+                <PropertyColumn Property="@(s => s.ServerName)" Title="Server" Sortable="true" IsDefaultSortColumn="true" InitialSortDirection="SortDirection.Ascending" Class="server-col" />
+                <PropertyColumn Property="@(s => s.Address)" Title="Address" Sortable="true" Class="address-col" />
+                <PropertyColumn Property="@(s => s.MapName)" Title="Map" Sortable="true" Class="map-col" />
+                <TemplateColumn SortBy="@PlayerSort" Title="Plrs" Sortable="true" Class="players-col">@context.Players</TemplateColumn>
+                <PropertyColumn Property="@(s => s.StatusAsString)" Sortable="true" Title="Status" Class="status-col" />
+
+            </QuickGrid>
         </div>
 
         <div style="display: grid; grid-template-columns: auto auto; gap: 5px; margin: 0% 23% 5.5% 20%; align-items: center;">

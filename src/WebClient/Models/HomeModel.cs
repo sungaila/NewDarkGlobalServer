@@ -15,13 +15,14 @@ namespace Sungaila.NewDark.WebClient.Models
 
         public List<WebSocketServerInfo> Servers { get; } = [];
 
-        public IEnumerable<WebSocketServerInfo> ServersFiltered
+        public IQueryable<WebSocketServerInfo> ServersFiltered
         {
             get
             {
                 return Servers
                     .Where(s => ShowClosed || !s.Status.HasFlag(WebSocketServerStatus.Closed))
-                    .Where(s => ShowDenied || !s.Status.HasFlag(WebSocketServerStatus.Denied));
+                    .Where(s => ShowDenied || !s.Status.HasFlag(WebSocketServerStatus.Denied))
+                    .AsQueryable();
             }
         }
 
