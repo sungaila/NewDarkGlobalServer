@@ -14,7 +14,8 @@
     <link rel="apple-touch-icon" sizes="192x192" href="icon-192.png" />
     <link rel="icon" type="image/x-icon" href="favicon.ico">
     <link rel="font" type="font/ttf" href="fonts/carleton.ttf">
-    <link rel="background" type="image/png" href="images/background.png">
+    <link rel="background" type="image/webp" href="images/background.webp">
+    <script type="importmap"></script>
 
     <!-- Start Single Page Apps for GitHub Pages -->
     <script type="text/javascript">
@@ -51,7 +52,7 @@
             color: #ffffce;
             font-family: 'Carleton';
             background: #010000;
-            background-image: url('images/background.png');
+            background-image: url('images/background.webp');
             background-repeat: no-repeat;
             background-attachment: fixed;
             background-position: center center;
@@ -92,7 +93,7 @@
         <a href="." class="reload">Reload</a>
         <span class="dismiss">🗙</span>
     </div>
-    <script src="_framework/blazor.webassembly.js"></script>
+    <script src="_framework/blazor.webassembly#[.{fingerprint}].js"></script>
     <script>navigator.serviceWorker.register('service-worker.js');</script>
 </body>
 

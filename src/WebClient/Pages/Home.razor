@@ -3,68 +3,72 @@
 
 <PageTitle>Thief 2 server list</PageTitle>
 
-<div style="width: 100vw;
+<main>
+    <div style="width: 100vw;
             height: 75vw;
             max-width: 133.333vh;
             max-height: 100vh;
             display: grid;
             grid-template-rows: auto 1fr auto 0;
             gap: 5px;">
-    <div style="display: grid; grid-template-columns: 1fr auto auto; gap: 5px; margin: 10% 12% 0% 10%; font-size: clamp(0px, 2vh, 2vw)">
-        <InputText @bind-Value="Model.GlobalServerAddress" id="globalserveraddress" autocomplete="on" type="url" placeholder="WebSocket address of the Global Server" required />
+        <div style="display: grid; grid-template-columns: 1fr auto auto; gap: 5px; margin: 10% 12% 0% 10%; font-size: clamp(0px, 2vh, 2vw)">
+            <InputText @bind-Value="Model.GlobalServerAddress" id="globalserveraddress" autocomplete="on" type="url" placeholder="WebSocket address of the Global Server" required />
 
-        <div style="display: flex; align-items: center;">
-            <InputCheckbox @bind-Value="Model.ShowClosed" id="showclosed" @onchange="FilterChanged" />
-            <label for="showclosed" style="margin: 0;">
-                Show closed <span title="The host must leave and re-host the game for the players to join.">🛈</span>
-            </label>
+            <div style="display: flex; align-items: center;">
+                <InputCheckbox @bind-Value="Model.ShowClosed" id="showclosed" @onchange="FilterChanged" />
+                <label for="showclosed" style="margin: 0;">
+                    Show closed <span title="The host must leave and re-host the game for the players to join.">🛈</span>
+                </label>
+            </div>
+
+            <div style="display: flex; align-items: center;">
+                <InputCheckbox @bind-Value="Model.ShowDenied" id="showdenied" @onchange="FilterChanged" />
+                <label for="showdenied" style="margin: 0;">
+                    Show denied <span title="These servers are listed in the global server, but the global server was unable to connect to the game session (firewall, NAT issues, etc.). These servers are not displayed in the in-game server list, but you may be able to join directly via the IP address.">🛈</span>
+                </label>
+            </div>
         </div>
 
-        <div style="display: flex; align-items: center;">
-            <InputCheckbox @bind-Value="Model.ShowDenied" id="showdenied" @onchange="FilterChanged" />
-            <label for="showdenied" style="margin: 0;">
-                Show denied <span title="These servers are listed in the global server, but the global server was unable to connect to the game session (firewall, NAT issues, etc.). These servers are not displayed in the in-game server list, but you may be able to join directly via the IP address.">🛈</span>
-            </label>
-        </div>
-    </div>
-
-    <div style="overflow-x: hidden; overflow-y: auto; margin: 0% 12% 10% 10%;">
-        <table id="serverlist" style="table-layout: fixed; width: 100%; font-size: clamp(0px, 1.8vw, 2.4vh);">
-            <thead>
-                <tr style="font-weight: bold; text-align: left;">
-                    <th style="position: sticky; top: 0; background: #010000; width: 25%;">Server</th>
-                    <th style="position: sticky; top: 0; background: #010000; width: 20%;">Address</th>
-                    <th style="position: sticky; top: 0; background: #010000; width: 35%;">Map</th>
-                    <th style="position: sticky; top: 0; background: #010000;">Plrs</th>
-                    <th style="position: sticky; top: 0; background: #010000;">Status</th>
-                </tr>
-            </thead>
-            <tbody>
-                @foreach (var server in Model.ServersFiltered)
-                {
-                    <tr>
-                        <td>@server.ServerName</td>
-                        <td>@server.Address</td>
-                        <td>@server.MapName</td>
-                        <td>@server.Players</td>
-                        <td>@server.StatusAsString</td>
+        <div style="overflow-x: hidden; overflow-y: auto; margin: 0% 12% 10% 10%;">
+            <table id="serverlist" style="table-layout: fixed; width: 100%; font-size: clamp(0px, 1.8vw, 2.4vh);">
+                <thead>
+                    <tr style="font-weight: bold; text-align: left;">
+                        <th role="columnheader" style="position: sticky; top: 0; background: #010000; width: 25%;">Server</th>
+                        <th role="columnheader" style="position: sticky; top: 0; background: #010000; width: 20%;">Address</th>
+                        <th role="columnheader" style="position: sticky; top: 0; background: #010000; width: 35%;">Map</th>
+                        <th role="columnheader" style="position: sticky; top: 0; background: #010000;">Plrs</th>
+                        <th role="columnheader" style="position: sticky; top: 0; background: #010000;">Status</th>
                     </tr>
-                }
-            </tbody>
-        </table>
+                </thead>
+                <tbody>
+                    @foreach (var server in Model.ServersFiltered)
+                    {
+                        <tr>
+                            <td>@server.ServerName</td>
+                            <td>@server.Address</td>
+                            <td>@server.MapName</td>
+                            <td>@server.Players</td>
+                            <td>@server.StatusAsString</td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+        </div>
+
+        <div style="display: grid; grid-template-columns: auto auto; gap: 5px; margin: 0% 23% 5.5% 20%; align-items: center;">
+            <a style="cursor:pointer; text-align: center; margin: 0% 33% 0% 0%; font-size: clamp(0px, 4vw, 5vh);" @onclick="OnRefresh">Refresh</a>
+            <a href="https://github.com/sungaila/NewDarkGlobalServer" target="_blank" rel="noopener noreferrer" style="text-align: center; margin: 0% 0% 0% 30%; font-size: clamp(0px, 4vw, 5vh);">GitHub</a>
+        </div>
     </div>
 
-    <div style="display: grid; grid-template-columns: auto auto; gap: 5px; margin: 0% 23% 5.5% 20%; align-items: center;">
-        <a style="cursor:pointer; text-align: center; margin: 0% 33% 0% 0%; font-size: clamp(0px, 4vw, 5vh);" @onclick="OnRefresh">Refresh</a>
-        <a href="https://github.com/sungaila/NewDarkGlobalServer" target="_blank" rel="noopener noreferrer" style="text-align: center; margin: 0% 0% 0% 30%; font-size: clamp(0px, 4vw, 5vh);">GitHub</a>
-    </div>
+    @if (Model.StatusMessage != null)
+    {
+        <div style="position: absolute; left: 100px; right: 100px; top: 45vh; bottom: 55vh; display: flex; align-items: center; font-size: clamp(0px, 4vw, 3vh);" class="container">
+            <p style="width: 100%; text-align: center; white-space: pre-line;">@Model.StatusMessage</p>
+        </div>
+    }
+</main>
 
-    <p style="width: 100%; opacity: 0.15; text-align: center; font-size: clamp(0px, 2vh, 1.75vw); position: relative; bottom: clamp(0px, 7vh, 5vw);">@Model.InformationalVersion</p>
-</div>
-
-@if (Model.StatusMessage != null)
-{
-    <div style="position: absolute; left: 100px; right: 100px; top: 45vh; bottom: 55vh; display: flex; align-items: center; font-size: clamp(0px, 4vw, 3vh);" class="container">
-        <p style="width: 100%; text-align: center; white-space: pre-line;">@Model.StatusMessage</p>
-    </div>
-}
+<footer>
+    <p style="position: fixed; bottom: 0; left: 0; width: 100%; text-align: center; opacity: 0.15; font-size: clamp(0px, 2vh, 1.75vw);">@Model.InformationalVersion</p>
+</footer>
