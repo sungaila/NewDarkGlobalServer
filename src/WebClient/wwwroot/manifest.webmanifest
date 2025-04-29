@@ -4,7 +4,7 @@
   "short_name": "GlobalServer Client",
   "start_url": "./",
   "background_color": "#010000",
-  "theme_color": "#391810",
+  "theme_color": "#010000",
   "description": "Shows available game servers for Thief 2: The Metal Age.",
   "lang": "en",
   "categories": [ "games", "network", "utilities" ],
