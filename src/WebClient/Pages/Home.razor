@@ -17,14 +17,14 @@
             <InputText @bind-Value="Model.GlobalServerAddress" id="globalserveraddress" autocomplete="on" type="url" placeholder="WebSocket address of the Global Server" required />
 
             <div style="display: flex; align-items: center;">
-                <InputCheckbox @bind-Value="Model.ShowClosed" id="showclosed" @onchange="FilterChanged" />
+                <InputCheckbox @bind-Value="Model.ShowClosed" id="showclosed" />
                 <label for="showclosed" style="margin: 0;">
                     Show closed <span title="The host must leave and re-host the game for the players to join.">🛈</span>
                 </label>
             </div>
 
             <div style="display: flex; align-items: center;">
-                <InputCheckbox @bind-Value="Model.ShowDenied" id="showdenied" @onchange="FilterChanged" />
+                <InputCheckbox @bind-Value="Model.ShowDenied" id="showdenied" />
                 <label for="showdenied" style="margin: 0;">
                     Show denied <span title="These servers are listed in the global server, but the global server was unable to connect to the game session (firewall, NAT issues, etc.). These servers are not displayed in the in-game server list, but you may be able to join directly via the IP address.">🛈</span>
                 </label>

@@ -24,7 +24,7 @@ namespace Sungaila.NewDark.GlobalServer
 
             try
             {
-                using var server = new WatsonWsServer(hostname, port, ssl);
+                using var server = new WatsonWsServer(hostname, port, ssl) { EnableStatistics = false };
 
                 server.ClientConnected += async (s, e) =>
                 {

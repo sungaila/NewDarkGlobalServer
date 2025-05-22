@@ -72,7 +72,7 @@ namespace Sungaila.NewDark.Core
 
             if (array.Length != 16)
                 throw new ArgumentOutOfRangeException(nameof(array));
-            
+
             return new Guid(array);
         }
 

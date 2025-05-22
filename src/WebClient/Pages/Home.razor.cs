@@ -1,5 +1,4 @@
-﻿using Microsoft.AspNetCore.Components;
-using Microsoft.AspNetCore.Components.QuickGrid;
+﻿using Microsoft.AspNetCore.Components.QuickGrid;
 using Sungaila.NewDark.Core;
 using Sungaila.NewDark.WebClient.Models;
 using System.Net.WebSockets;
@@ -74,11 +73,6 @@ namespace Sungaila.NewDark.WebClient.Pages
                     _isRefreshing = 0;
                 }
             }
-        }
-
-        private void FilterChanged(ChangeEventArgs args)
-        {
-
         }
     }
 }

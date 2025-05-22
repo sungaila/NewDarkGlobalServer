@@ -9,9 +9,10 @@
     <ApplicationIcon>App.ico</ApplicationIcon>
     <DockerDefaultTargetOS>Linux</DockerDefaultTargetOS>
     <Configurations>Debug;Release;ReleaseSigned</Configurations>
-    <VersionPrefix>1.4.0</VersionPrefix>
+    <VersionPrefix>1.4.1</VersionPrefix>
     <VersionSuffix></VersionSuffix>
     <PublishAot>true</PublishAot>
+    <ServerGarbageCollection>true</ServerGarbageCollection>
   </PropertyGroup>
 
   <!-- C# compiler -->
