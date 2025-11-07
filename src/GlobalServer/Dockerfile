@@ -1,11 +1,11 @@
 ARG LAUNCHING_FROM_VS
 ARG FINAL_BASE_IMAGE=${LAUNCHING_FROM_VS:+aotdebug}
 
-FROM mcr.microsoft.com/dotnet/runtime:9.0-alpine AS base
+FROM mcr.microsoft.com/dotnet/runtime:10.0-alpine AS base
 USER $APP_UID
 WORKDIR /app
 
-FROM mcr.microsoft.com/dotnet/sdk:9.0-alpine AS build
+FROM mcr.microsoft.com/dotnet/sdk:10.0-alpine AS build
 RUN apk update \
     && apk add build-base zlib-dev
 ARG BUILD_CONFIGURATION=Release
@@ -27,7 +27,7 @@ RUN apk update \
     && apk add gdb
 USER app
 
-FROM ${FINAL_BASE_IMAGE:-mcr.microsoft.com/dotnet/runtime-deps:9.0-alpine} AS final
+FROM ${FINAL_BASE_IMAGE:-mcr.microsoft.com/dotnet/runtime-deps:10.0-alpine} AS final
 WORKDIR /app
 COPY --from=publish /app/publish .
 ENTRYPOINT ["./NewDarkGlobalServer"]
