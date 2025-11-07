@@ -14,7 +14,9 @@
     <WasmNativeStrip>true</WasmNativeStrip>
     <PublishTrimmed>true</PublishTrimmed>
     <TrimMode>partial</TrimMode>
-    <OverrideHtmlAssetPlaceholders>true</OverrideHtmlAssetPlaceholders>
+		<InvariantGlobalization>true</InvariantGlobalization>
+		<!-- QuickGrid doesn't work with fingerprinting right now -->
+    <OverrideHtmlAssetPlaceholders>false</OverrideHtmlAssetPlaceholders>
   </PropertyGroup>
 
   <!-- C# compiler -->
@@ -53,6 +55,7 @@
 
   <ItemGroup>
     <ServiceWorker Include="wwwroot\service-worker.js" PublishedContent="wwwroot\service-worker.published.js" />
+		<!--<StaticWebAssetFingerprintPattern Include="JS" Pattern="*.js" Expression="#[.{fingerprint}]!" />-->
   </ItemGroup>
 
   <ItemGroup>
