@@ -15,11 +15,11 @@ jobs:
     runs-on: ubuntu-latest
     steps:
     - uses: actions/checkout@main
-    - name: Setup .NET 9
+    - name: Setup .NET
       uses: actions/setup-dotnet@main
       with:
-        dotnet-version: 9.x
-        dotnet-quality: 'ga'
+        dotnet-version: 10.x
+        dotnet-quality: 'preview'
     - name: Restore
       run: dotnet restore src/GlobalServer/NewDarkGlobalServer.csproj
     - name: Build

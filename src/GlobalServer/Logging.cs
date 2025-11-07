@@ -22,9 +22,9 @@ namespace Sungaila.NewDark.GlobalServer
 
         static readonly Lock _logWriteLineLock = new();
 
-        private readonly record struct DelayedWriteLine(DateTimeOffset Timestamp, string PrimayMessage, string SecondaryMessage, string? Verbose);
+        private readonly record struct DelayedWriteLine(DateTimeOffset Timestamp, string PrimaryMessage, string SecondaryMessage, string? Verbose);
 
-        static readonly ConcurrentDictionary<Guid, List<DelayedWriteLine>> _delayedWriteLines = new();
+        static readonly ConcurrentDictionary<Guid, ConcurrentQueue<DelayedWriteLine>> _delayedWriteLines = new();
 
         public static void LogWriteLine(string message)
         {
@@ -40,21 +40,13 @@ namespace Sungaila.NewDark.GlobalServer
             }
         }
 
-        public static void LogWriteLineDelayed(Guid guid, string primayMessage, string secondaryMessage, string? verbose = null)
+        public static void LogWriteLineDelayed(Guid guid, string primaryMessage, string secondaryMessage, string? verbose = null)
         {
             if (guid == default)
                 return;
 
-            var newEntry = new DelayedWriteLine(DateTimeOffset.Now, primayMessage, secondaryMessage, verbose);
-
-            if (_delayedWriteLines.TryGetValue(guid, out var delayedWriteLines))
-            {
-                delayedWriteLines.Add(newEntry);
-            }
-            else
-            {
-                _delayedWriteLines.TryAdd(guid, [newEntry]);
-            }
+            var q = _delayedWriteLines.GetOrAdd(guid, _ => new ConcurrentQueue<DelayedWriteLine>());
+            q.Enqueue(new DelayedWriteLine(DateTimeOffset.Now, primaryMessage, secondaryMessage, verbose));
         }
 
         private static void FlushDelayed(Guid guid)
@@ -62,12 +54,12 @@ namespace Sungaila.NewDark.GlobalServer
             if (guid == default)
                 return;
 
-            if (!_delayedWriteLines.TryGetValue(guid, out var delayedWriteLines))
+            if (!_delayedWriteLines.TryGetValue(guid, out var q))
                 return;
 
-            foreach (var line in delayedWriteLines)
+            while (q.TryDequeue(out var line))
             {
-                LogWriteLineInternal(line.Timestamp, line.PrimayMessage, line.SecondaryMessage, line.Verbose);
+                LogWriteLineInternal(line.Timestamp, line.PrimaryMessage, line.SecondaryMessage, line.Verbose);
             }
 
             CleanDelayed(guid);
@@ -81,16 +73,16 @@ namespace Sungaila.NewDark.GlobalServer
             _delayedWriteLines.TryRemove(guid, out _);
         }
 
-        public static void LogWriteLine(Guid guid, string primayMessage, string secondaryMessage, string? verbose = null)
+        public static void LogWriteLine(Guid guid, string primaryMessage, string secondaryMessage, string? verbose = null)
         {
             lock (_logWriteLineLock)
             {
                 FlushDelayed(guid);
-                LogWriteLineInternal(DateTime.Now, primayMessage, secondaryMessage, verbose);
+                LogWriteLineInternal(DateTime.Now, primaryMessage, secondaryMessage, verbose);
             }
         }
 
-        private static void LogWriteLineInternal(DateTimeOffset timestamp, string primayMessage, string secondaryMessage, string? verbose = null)
+        private static void LogWriteLineInternal(DateTimeOffset timestamp, string primaryMessage, string secondaryMessage, string? verbose = null)
         {
             if (PrintTimeStamps)
             {
@@ -101,11 +93,11 @@ namespace Sungaila.NewDark.GlobalServer
 
             if (secondaryMessage == null)
             {
-                Console.WriteLine(primayMessage);
+                Console.WriteLine(primaryMessage);
             }
             else
             {
-                Console.Write($"{primayMessage} ");
+                Console.Write($"{primaryMessage} ");
                 Console.ForegroundColor = ConsoleColor.DarkGray;
 
                 if (verbose == null || !Verbose)
@@ -146,7 +138,7 @@ namespace Sungaila.NewDark.GlobalServer
             }
         }
 
-        public static void ErrorWriteLine(Guid guid, string primayMessage, string? secondaryMessage = null)
+        public static void ErrorWriteLine(Guid guid, string primaryMessage, string? secondaryMessage = null)
         {
             lock (_logWriteLineLock)
             {
@@ -162,13 +154,13 @@ namespace Sungaila.NewDark.GlobalServer
                 if (secondaryMessage == null)
                 {
                     Console.ForegroundColor = ConsoleColor.Red;
-                    Console.WriteLine(primayMessage);
+                    Console.WriteLine(primaryMessage);
                     Console.ResetColor();
                 }
                 else
                 {
                     Console.ForegroundColor = ConsoleColor.Red;
-                    Console.Write($"{primayMessage} ");
+                    Console.Write($"{primaryMessage} ");
                     Console.ResetColor();
 
                     Console.ForegroundColor = ConsoleColor.DarkGray;

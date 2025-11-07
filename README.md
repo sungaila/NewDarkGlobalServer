@@ -54,34 +54,25 @@ global_server_port 5199
 ## Command-line options
 Use the `--help` argument to show all available options.
 ```
-Usage: NewDarkGlobalServer [options]
-Starts a server providing a game server list for Thief 2 Multiplayer.
+Description:
+  Starts a server providing a game server list for Thief 2 Multiplayer.
+
+Usage:
+  NewDarkGlobalServer [options]
 
 Options:
-  -p, --port=VALUE           Sets the port for this global server. Default is
-                               5199.
-  -s, --timeoutserver=VALUE  Sets timeout for game servers in seconds. Default
-                               is 180 seconds (00:03:00).
-  -c, --timeoutclient=VALUE  Sets timeout for game clients in seconds. Default
-                               is 3600 seconds (01:00:00).
-  -u, --timeoutunidentified=VALUE
-                             Sets timeout for connections to indentify as
-                               client or server in seconds. Default is 10
-                               seconds (00:00:10).
-  -b, --showheartbeatminimal Shows HeartbeatMinimal messages in the log. Each
-                               connected game server sends one every 10 seconds
-                               so the log may become cluttered.
-  -f, --hidefailedconn       Hides failed connections attempts (due to invalid
-                               or unknown messages) from the log.
-  -t, --printtimestamps      Adds timestamps to the log output.
-  -w, --websocket            Activates the optional WebSocket for non-game
-                               clients. Deactivated by default.
-  -n, --websockethostname=VALUE
-                             Sets the hostname for the WebSocket. Default is
-                               localhost.
-  -m, --websocketport=VALUE  Sets the port for the WebSocket. Default is 5200.
-  -e, --websocketssl         Activates SSL for the WebSocket. Deactivated by
-                               default.
-  -v, --verbose              Shows more verbose messages in the log.
-  -h, --help                 Prints this helpful option list and exits.
+  -p, --port <port>                                                        Port for this global server [default: 5199]
+  -s, --timeout-server, --timeoutserver <timeoutserver>                    Game server timeout in seconds [default: 180]
+  -c, --timeout-client, --timeoutclient <timeoutclient>                    Game client timeout in seconds [default: 3600]
+  -u, --timeout-unidentified, --timeoutunidentified <timeoutunidentified>  Timeout for connections to identify as client or server in seconds [default: 10]
+  -b, --show-heartbeat-minimal, --showheartbeatminimal                     Show HeartbeatMinimal messages in the log
+  -f, --hide-failed-conn, --hidefailedconn                                 Hide failed connection attempts (due to invalid or unknown messages) from the log
+  -t, --print-timestamps, --printtimestamps                                Add timestamps to the log output
+  -w, --websocket                                                          Activate the optional WebSocket for non-game clients
+  -n, --websocket-hostname, --websockethostname <websockethostname>        Set the hostname for the WebSocket [default: localhost]
+  -m, --websocket-port, --websocketport <websocketport>                    Set the port for the WebSocket [default: 5200]
+  -e, --websocket-ssl, --websocketssl                                      Activate SSL for the WebSocket
+  -v, --verbose                                                            Show more verbose messages in the log
+  -?, -h, --help                                                           Show help and usage information
+  --version                                                                Show version information
 ```

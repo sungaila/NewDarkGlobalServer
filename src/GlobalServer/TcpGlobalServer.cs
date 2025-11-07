@@ -83,7 +83,7 @@ namespace Sungaila.NewDark.GlobalServer
                 throw;
             }
 
-            var cleanupTask = Task.Factory.StartNew(async () => await HandleCleanupAsync(cancellationToken), cancellationToken, TaskCreationOptions.LongRunning, TaskScheduler.Current);
+            var cleanupTask = HandleCleanupAsync(cancellationToken);
 
             while (!cancellationToken.IsCancellationRequested)
             {
@@ -103,7 +103,7 @@ namespace Sungaila.NewDark.GlobalServer
 
                     LogWriteLineDelayed(newConnection.Id, "Connection accepted (TCP)", $"for {clientSocket.RemoteEndPoint}");
 
-                    newConnection.Task = Task.Factory.StartNew(async () => await HandleConnectionAsync(clientSocket, newConnection, cancellationToken), cancellationToken, TaskCreationOptions.LongRunning, TaskScheduler.Current);
+                    newConnection.Task = HandleConnectionAsync(clientSocket, newConnection, cancellationToken);
                 }
                 catch (SocketException ex)
                 {
@@ -129,7 +129,7 @@ namespace Sungaila.NewDark.GlobalServer
         {
             try
             {
-                await Task.Delay(TimeSpan.FromSeconds(1), cancellationToken);
+                await Task.Delay(TimeSpan.FromMilliseconds(100), cancellationToken);
 
                 while (socket.Connected)
                 {
@@ -211,7 +211,7 @@ namespace Sungaila.NewDark.GlobalServer
 
                             if (heartbeat.ProtocolVersion < SupportedProtocolVersion)
                             {
-                                ErrorWriteLine(connection.Id, $"Game server sent a higher ProtocolVersion ({heartbeat.ProtocolVersion}) than supported ({SupportedProtocolVersion})", $"({socket.RemoteEndPoint})");
+                                ErrorWriteLine(connection.Id, $"Game server sent a lower ProtocolVersion ({heartbeat.ProtocolVersion}) than supported ({SupportedProtocolVersion})", $"({socket.RemoteEndPoint})");
                                 return;
                             }
 
@@ -270,7 +270,7 @@ namespace Sungaila.NewDark.GlobalServer
                                 return;
                             }
 
-                            if (connection.Status != ConnectionStatus.AwaitClientCommand)
+                            if (connection.Status != ConnectionStatus.AwaitServerCommand)
                             {
                                 if (connection.Status == ConnectionStatus.AwaitClientCommand)
                                     ErrorWriteLine(connection.Id, "Game client sent ServerClosedMessage (message is server only)", $"({socket.RemoteEndPoint})");
@@ -303,7 +303,7 @@ namespace Sungaila.NewDark.GlobalServer
                             return;
                     }
 
-                    await Task.Delay(TimeSpan.FromSeconds(1), cancellationToken);
+                    await Task.Delay(TimeSpan.FromMilliseconds(100), cancellationToken);
                 }
 
             }
@@ -313,7 +313,8 @@ namespace Sungaila.NewDark.GlobalServer
                 ErrorWriteLine(connection.Id, "Failed receiving message", $"from {connection.InitialEndPoint.Address}");
                 ErrorWriteLine(connection.Id, ex.ToString());
             }
-            catch (Exception ex) when (ex is TaskCanceledException || ex is OperationCanceledException) { }
+            catch (TaskCanceledException) { }
+            catch (OperationCanceledException) { }
             catch (Exception ex)
             {
                 ErrorWriteLine(connection.Id, "Failed handling message", $"from {connection.InitialEndPoint.Address}");
@@ -372,7 +373,8 @@ namespace Sungaila.NewDark.GlobalServer
                 ErrorWriteLine(default, "Failed broadcasting to clients");
                 ErrorWriteLine(default, ex.ToString());
             }
-            catch (Exception ex) when (ex is TaskCanceledException || ex is OperationCanceledException) { }
+            catch (TaskCanceledException) { }
+            catch (OperationCanceledException) { }
             catch (Exception ex)
             {
                 ErrorWriteLine(default, "Failed broadcasting to clients");
@@ -382,54 +384,56 @@ namespace Sungaila.NewDark.GlobalServer
 
         private async Task HandleCleanupAsync(CancellationToken cancellationToken = default)
         {
+            using var timer = new PeriodicTimer(CleanupInterval);
+
             try
             {
-                while (!cancellationToken.IsCancellationRequested)
+                while (await timer.WaitForNextTickAsync(cancellationToken))
                 {
-                    cancellationToken.ThrowIfCancellationRequested();
-
-                    foreach (var connection in _connections.Values.ToList())
+                    try
                     {
-                        cancellationToken.ThrowIfCancellationRequested();
-
-                        if (connection.Status != ConnectionStatus.Closed &&
-                            connection.Task != null &&
-                            connection.Socket != null &&
-                            connection.Socket.Connected)
+                        foreach (var connection in _connections.Values.ToList())
                         {
-                            var timeSinceLastActivity = DateTimeOffset.Now.Subtract(connection.LastActivity);
+                            cancellationToken.ThrowIfCancellationRequested();
 
-                            // game clients will not send messages except for the first request and when exiting
-                            // so the timeout should be set rather high
-                            if (connection.Status == ConnectionStatus.AwaitClientCommand)
+                            if (connection.Status != ConnectionStatus.Closed &&
+                                connection.Task != null &&
+                                connection.Socket != null &&
+                                connection.Socket.Connected)
                             {
-                                if (timeSinceLastActivity < ClientConnectionTimeout)
+                                var timeSinceLastActivity = DateTimeOffset.Now.Subtract(connection.LastActivity);
+
+                                // game clients will not send messages except for the first request and when exiting
+                                // so the timeout should be set rather high
+                                if (connection.Status == ConnectionStatus.AwaitClientCommand)
+                                {
+                                    if (timeSinceLastActivity < ClientConnectionTimeout)
+                                        continue;
+                                }
+                                // game servers send heartbeats every 10 seconds (unless a cutscene is playing)
+                                // this timeout should compensate a potential cutscene
+                                else if (connection.Status == ConnectionStatus.AwaitServerCommand)
+                                {
+                                    if (timeSinceLastActivity < ServerConnectionTimeout)
+                                        continue;
+                                }
+                                // new connections should send their first message ASAP
+                                // this timeout should be set short
+                                else if (timeSinceLastActivity < UnidentifiedConnectionTimeout)
+                                {
                                     continue;
+                                }
                             }
-                            // game servers send heartbeats every 10 seconds (unless a cutscene is playing)
-                            // this timeout should compensate a potential cutscene
-                            else if (connection.Status == ConnectionStatus.AwaitServerCommand)
-                            {
-                                if (timeSinceLastActivity < ServerConnectionTimeout)
-                                    continue;
-                            }
-                            // new connections should send their first message ASAP
-                            // this timeout should be set short
-                            else if (timeSinceLastActivity < UnidentifiedConnectionTimeout)
-                            {
-                                continue;
-                            }
+
+                            LogWriteLine($"Connection timeout: {connection.InitialEndPoint}");
+                            await DisconnectAsync(connection, cancellationToken);
                         }
-
-                        LogWriteLine($"Connection timeout: {connection.InitialEndPoint}");
-                        await DisconnectAsync(connection, cancellationToken);
                     }
-
-                    await Task.Delay(CleanupInterval, cancellationToken);
+                    catch (SocketException ex) when (ex.ErrorCode == (int)SocketError.OperationAborted || ex.ErrorCode != (int)SocketError.ConnectionAborted) { }
                 }
             }
-            catch (SocketException ex) when (ex.ErrorCode == (int)SocketError.OperationAborted || ex.ErrorCode != (int)SocketError.ConnectionAborted) { }
-            catch (Exception ex) when (ex is TaskCanceledException || ex is OperationCanceledException) { }
+            catch (TaskCanceledException) { }
+            catch (OperationCanceledException) { }
         }
 
         private async Task DisconnectAsync(Connection connection, CancellationToken cancellationToken = default)
