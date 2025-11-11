@@ -62,7 +62,7 @@
 
   <ItemGroup>
     <PackageReference Include="Microsoft.VisualStudio.Azure.Containers.Tools.Targets" Version="1.22.1" />
-    <PackageReference Include="System.CommandLine" Version="2.0.0-rc.2.25502.107" />
+    <PackageReference Include="System.CommandLine" Version="2.0.0" />
     <PackageReference Include="WatsonWebsocket" Version="4.1.7" />
   </ItemGroup>
 

@@ -19,7 +19,7 @@ jobs:
       uses: actions/setup-dotnet@main
       with:
         dotnet-version: 10.x
-        dotnet-quality: 'preview'
+        dotnet-quality: 'ga'
     - name: Restore
       run: dotnet restore src/GlobalServer/NewDarkGlobalServer.csproj
     - name: Build
