@@ -13,6 +13,7 @@
     <VersionSuffix></VersionSuffix>
     <PublishAot>true</PublishAot>
     <ServerGarbageCollection>true</ServerGarbageCollection>
+		<SatelliteResourceLanguages>en</SatelliteResourceLanguages>
   </PropertyGroup>
 
   <!-- C# compiler -->
