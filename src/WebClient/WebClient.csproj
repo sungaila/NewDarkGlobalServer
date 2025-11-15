@@ -12,9 +12,11 @@
     <VersionSuffix></VersionSuffix>
     <RunAOTCompilation>true</RunAOTCompilation>
     <WasmNativeStrip>true</WasmNativeStrip>
+		<WasmStripILAfterAOT>true</WasmStripILAfterAOT>
+		<InvariantGlobalization>true</InvariantGlobalization>
+		<InvariantTimezone>true</InvariantTimezone>
     <PublishTrimmed>true</PublishTrimmed>
     <TrimMode>partial</TrimMode>
-		<InvariantGlobalization>true</InvariantGlobalization>
     <OverrideHtmlAssetPlaceholders>true</OverrideHtmlAssetPlaceholders>
   </PropertyGroup>
 
