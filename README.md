@@ -48,7 +48,7 @@ global_server_port 5199
 1. Download [the latest release](https://github.com/sungaila/NewDarkGlobalServer/releases).
 2. Launch `NewDarkGlobalServer.exe`.
     - Default TCP port is `5199`
-    - You can change that port with the command line argument `--port=YOURNUMBER`
+    - You can change that port with the command line argument `--port YOURNUMBER`
 3. Make sure all your clients have updated their `dark_net.cfg` file with your name and port.
 
 ## Command-line options
