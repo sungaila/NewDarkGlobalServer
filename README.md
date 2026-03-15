@@ -15,7 +15,10 @@ Also a web client to check for running game servers without opening the game: ht
 > A few fan missions will not work after installing the multiplayer patch. So consider to create a copy of the Thief 2 game folder for singleplayer purposes.
 2. Download the latest version of [T2Fix: An Unofficial Comprehensive Patch for Thief 2](https://github.com/Xanfre/T2Fix/releases).
 3. Install T2Fix and make sure to select the component `Thief 2 Multiplayer`.
-4. Enjoy! Start the game with `Thief2MP.exe`. Windows might prompt you to install [DirectPlay](https://en.wikipedia.org/wiki/DirectPlay) on first launch.
+4. Start the game with `Thief2MP.exe`.
+    - Windows might prompt you to install [DirectPlay](https://en.wikipedia.org/wiki/DirectPlay) on first launch.
+    - For Linux (e.g. Valve Steam Deck): Use [ProtonTricks](https://protontricks.com/) (or [Winetricks](https://github.com/winetricks/winetricks)) to get DirectPlay working.
+5. Enjoy!
     - Select `Multiplayer` in the main menu.
     - Host your own game with `Host a Game` (uses UDP port `5198`).
     - Join a game lobby with `Join a Game`. You will need to enter the IP address of the host (must be IPv4 like `127.0.0.1`). You cannot join game sessions that have already started.
