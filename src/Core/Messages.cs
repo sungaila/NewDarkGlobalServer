@@ -326,11 +326,11 @@ namespace Sungaila.NewDark.Core
             {
                 var byteList = new List<byte>();
 
-                byteList.Add(0x00); // LeadByte: 00 = Session Packet
-                byteList.Add(0x02); // CommandByte: 02 = Enumeration Query
-                byteList.AddRange(new byte[] { 0x67, 0xD1 }.ToNetworkOrder()); // EnumPayload: 26577 (0x67D1)
-                byteList.Add(0x01); // QueryType: This query contains an ApplicationGUID field
-                byteList.AddRange(Thief2GameId.ToByteArray()); // ApplicationGUID: {00F682D7-AB11-4540-9FC2-C43E97358C73}
+                byteList.Add(0x00);                                         // LeadByte: 00 = Session Packet
+                byteList.Add(0x02);                                         // CommandByte: 02 = Enumeration Query
+                byteList.AddRange(new byte[] { 0x67, 0xD1 }.ToNetworkOrder());   // EnumPayload: 26577 (0x67D1)
+                byteList.Add(0x01);                                         // QueryType: This query contains an ApplicationGUID field
+                byteList.AddRange(Thief2GameId.ToByteArray());                   // ApplicationGUID: {00F682D7-AB11-4540-9FC2-C43E97358C73}
 
                 return byteList.ToArray();
             }
@@ -399,25 +399,25 @@ namespace Sungaila.NewDark.Core
         {
             public SessionEnumerationResponse(byte[] input) : this(default, default, default, default, default, default, default, default, default, default, default, default, default, default, default, default, default, default, default)
             {
-                LeadByte = input[0]; // LeadByte: 00 = Session Packet
-                CommandByte = input[1]; // CommandByte: 3 (0x3)
-                EnumPayload = (ushort)input[2..4].DirectPlayShortToHostOrder(); // EnumPayload: 26577 (0x67D1)
-                ReplyOffset = (uint)input[4..8].DirectPlayIntToHostOrder(); // ReplyOffset: 0 (0x0)
-                ResponseSize = (uint)input[8..12].DirectPlayIntToHostOrder(); // ResponseSize: 0 bytes
-                ApplicationDescSize = (uint)input[12..16].DirectPlayIntToHostOrder(); // ApplicationDescSize: 0x50, MUST be set to 0x00000050
-                ApplicationDescFlags = (ApplicationDescFlags)input[16..20].DirectPlayIntToHostOrder(); // ApplicationDescFlags: 64 (0x40)
-                MaxPlayers = (uint)input[20..24].DirectPlayIntToHostOrder(); // MaxPlayers: 8 (0x8)
-                CurrentPlayers = (uint)input[24..28].DirectPlayIntToHostOrder(); // CurrentPlayers
-                SessionNameOffset = (uint)input[28..32].DirectPlayIntToHostOrder(); // SessionNameOffset: 88 (0x58)
-                SessionNameSize = (uint)input[32..36].DirectPlayIntToHostOrder(); // SessionNameSize: 2 bytes
-                PasswordOffset = (uint)input[36..40].DirectPlayIntToHostOrder(); // PasswordOffset: 0 (0x0)
-                PasswordSize = (uint)input[40..44].DirectPlayIntToHostOrder(); // PasswordSize: 0 bytes
-                ReservedDataOffset = (uint)input[44..48].DirectPlayIntToHostOrder(); // ReservedDataOffset: 0 (0x0)
-                ReservedDataSize = (uint)input[48..52].DirectPlayIntToHostOrder(); // ReservedDataSize: 0 bytes
-                ApplicationReservedDataOffset = (uint)input[52..56].DirectPlayIntToHostOrder(); // ApplicationReservedDataOffset: 0 (0x0)
-                ApplicationReservedDataSize = (uint)input[56..60].DirectPlayIntToHostOrder(); // ApplicationReservedDataSize: 0 bytes
-                ApplicationInstanceGUID = input[60..76].DirectPlayGuidToHostOrder(); //ApplicationInstanceGUID
-                ApplicationGUID = input[76..92].DirectPlayGuidToHostOrder();// ApplicationGUID: {00F682D7-AB11-4540-9FC2-C43E97358C73}
+                LeadByte = input[0];                                                                    // LeadByte: 00 = Session Packet
+                CommandByte = input[1];                                                                 // CommandByte: 3 (0x3)
+                EnumPayload = (ushort)input[2..4].DirectPlayShortToHostOrder();                         // EnumPayload: 26577 (0x67D1)
+                ReplyOffset = (uint)input[4..8].DirectPlayIntToHostOrder();                             // ReplyOffset: 0 (0x0)
+                ResponseSize = (uint)input[8..12].DirectPlayIntToHostOrder();                           // ResponseSize: 0 bytes
+                ApplicationDescSize = (uint)input[12..16].DirectPlayIntToHostOrder();                   // ApplicationDescSize: 0x50, MUST be set to 0x00000050
+                ApplicationDescFlags = (ApplicationDescFlags)input[16..20].DirectPlayIntToHostOrder();  // ApplicationDescFlags: 64 (0x40)
+                MaxPlayers = (uint)input[20..24].DirectPlayIntToHostOrder();                            // MaxPlayers: 8 (0x8)
+                CurrentPlayers = (uint)input[24..28].DirectPlayIntToHostOrder();                        // CurrentPlayers
+                SessionNameOffset = (uint)input[28..32].DirectPlayIntToHostOrder();                     // SessionNameOffset: 88 (0x58)
+                SessionNameSize = (uint)input[32..36].DirectPlayIntToHostOrder();                       // SessionNameSize: 2 bytes
+                PasswordOffset = (uint)input[36..40].DirectPlayIntToHostOrder();                        // PasswordOffset: 0 (0x0)
+                PasswordSize = (uint)input[40..44].DirectPlayIntToHostOrder();                          // PasswordSize: 0 bytes
+                ReservedDataOffset = (uint)input[44..48].DirectPlayIntToHostOrder();                    // ReservedDataOffset: 0 (0x0)
+                ReservedDataSize = (uint)input[48..52].DirectPlayIntToHostOrder();                      // ReservedDataSize: 0 bytes
+                ApplicationReservedDataOffset = (uint)input[52..56].DirectPlayIntToHostOrder();         // ApplicationReservedDataOffset: 0 (0x0)
+                ApplicationReservedDataSize = (uint)input[56..60].DirectPlayIntToHostOrder();           // ApplicationReservedDataSize: 0 bytes
+                ApplicationInstanceGUID = input[60..76].DirectPlayGuidToHostOrder();                    // ApplicationInstanceGUID
+                ApplicationGUID = input[76..92].DirectPlayGuidToHostOrder();                            // ApplicationGUID: {00F682D7-AB11-4540-9FC2-C43E97358C73}
             }
 
             public byte[] ToByteArray()
