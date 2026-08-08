@@ -16,9 +16,10 @@
     <link rel="apple-touch-icon" sizes="512x512" href="icon-512.png" />
     <link rel="apple-touch-icon" sizes="192x192" href="icon-192.png" />
     <link rel="icon" type="image/x-icon" href="favicon.ico">
-    <link rel="font" type="font/ttf" href="fonts/carleton.ttf">
-    <link rel="preload" as="image" type="image/webp" href="images/background.webp">
+    <link rel="preload" type="font/woff2" href="fonts/carleton.woff2" as="font" crossorigin="anonymous">
+    <link rel="preload" as="image" type="image/webp" href="images/background.webp" fetchpriority="high">
     <link rel="preload" id="webassembly" />
+    <link rel="preconnect" href="https://thief2.sungaila.de:5200" crossorigin="anonymous">
     <script type="importmap"></script>
 
     <!-- Start Single Page Apps for GitHub Pages -->
@@ -49,17 +50,16 @@
     <style>
         @font-face {
             font-family: 'Carleton';
-            src: url('fonts/carleton.ttf') format('truetype');
+            src: url('fonts/carleton.woff2') format('woff2');
             font-display: swap;
         }
-
     </style>
 </head>
 
 <body>
     <div id="app">
         <main class="game-screen">
-            <img src="icon-512.png" style="position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); width: 4rem; height: 4rem" alt="NewDarkGlobalServer Logo" />
+            <img src="icon-192.png" style="position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); width: 4rem; height: 4rem" alt="NewDarkGlobalServer Logo" />
             <svg class="loading-progress" style="position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); opacity: 0.8">
                 <circle r="40%" cx="50%" cy="50%" />
                 <circle r="40%" cx="50%" cy="50%" />

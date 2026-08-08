@@ -89,7 +89,7 @@ namespace Sungaila.NewDark.WebClient.Pages
             const int BufferSize = 4096;
 
             var buffer = new byte[BufferSize];
-            var message = new ArrayBufferWriter<byte>();
+            var message = new ArrayBufferWriter<byte>(BufferSize);
 
             while (true)
             {

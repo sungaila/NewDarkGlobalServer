@@ -305,17 +305,17 @@ namespace Sungaila.NewDark.Core
             {
                 get
                 {
-                    var flags = new List<string>();
+                    var sb = new StringBuilder();
 
                     if (Status.HasFlag(WebSocketServerStatus.Closed))
-                        flags.Add(nameof(WebSocketServerStatus.Closed));
+                        sb.Append(nameof(WebSocketServerStatus.Closed));
                     else
-                        flags.Add(nameof(WebSocketServerStatus.Open));
+                        sb.Append(nameof(WebSocketServerStatus.Open));
 
                     if (Status.HasFlag(WebSocketServerStatus.Denied))
-                        flags.Add(nameof(WebSocketServerStatus.Denied));
+                        sb.Append($", {nameof(WebSocketServerStatus.Denied)}");
 
-                    return string.Join(", ", flags);
+                    return sb.ToString();
                 }
             }
         }

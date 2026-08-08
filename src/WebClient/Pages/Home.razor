@@ -6,17 +6,17 @@
 
 <main class="game-screen">
     <div style="display: grid; grid-template-columns: 1fr auto auto; gap: 5px; margin: 10% 12% 0% 10%; font-size: clamp(0px, 2vh, 2vw)">
-        <InputText @bind-Value="Model.GlobalServerAddress" id="globalserveraddress" autocomplete="on" type="url" placeholder="WebSocket address of the Global Server" required />
+        <input @bind="Model.GlobalServerAddress" id="globalserveraddress" type="url" autocomplete="on" autocapitalize="off" spellcheck="false" placeholder="WebSocket address of the Global Server" required />
 
         <div style="display: flex; align-items: center;">
-            <InputCheckbox @bind-Value="Model.ShowClosed" id="showclosed" />
+            <input  @bind="Model.ShowClosed" id="showclosed" type="checkbox" />
             <label for="showclosed" style="margin: 0;">
                 Show closed <span title="The host must leave and re-host the game for the players to join.">🛈</span>
             </label>
         </div>
 
         <div style="display: flex; align-items: center;">
-            <InputCheckbox @bind-Value="Model.ShowDenied" id="showdenied" />
+            <input @bind="Model.ShowDenied" id="showdenied" type="checkbox" />
             <label for="showdenied" style="margin: 0;">
                 Show denied <span title="These servers are listed in the global server, but the global server was unable to connect to the game session (firewall, NAT issues, etc.). These servers are not displayed in the in-game server list, but you may be able to join directly via the IP address.">🛈</span>
             </label>

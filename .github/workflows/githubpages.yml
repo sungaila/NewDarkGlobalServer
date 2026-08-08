@@ -29,10 +29,6 @@ jobs:
         working-directory: src/WebClient/wwwroot
         run: |
             sed -i 's/<base href="\/" \/>/<base href="\/${{github.event.repository.name}}\/" \/>/g' index.html
-            sed -i 's/"scope": "\/"/"scope": "\/${{github.event.repository.name}}\/"/g' manifest.webmanifest
-            sed -i 's/"start_url": "\/"/"start_url": "\/${{github.event.repository.name}}\/"/g' manifest.webmanifest
-            sed -i 's/"action": "\/"/"action": "\/${{github.event.repository.name}}\/"/g' manifest.webmanifest
-            sed -i 's/"action": "\/receive-webshare"/"action": "\/${{github.event.repository.name}}\/receive-webshare"/g' manifest.webmanifest
       - name: Restore
         run: dotnet restore src/WebClient/WebClient.csproj -p:Configuration=Release
       - name: Publish
