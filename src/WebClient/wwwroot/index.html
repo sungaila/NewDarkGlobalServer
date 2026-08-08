@@ -5,17 +5,6 @@
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
 
-    <style>
-        html {
-            background-color: #010000;
-            color-scheme: dark;
-            background-repeat: no-repeat;
-            background-attachment: fixed;
-            background-position: center center;
-            background-size: contain;
-            background-image: url('images/background.webp');
-        }
-    </style>
 
     <meta name="theme-color" content="#010000">
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
@@ -28,7 +17,7 @@
     <link rel="apple-touch-icon" sizes="192x192" href="icon-192.png" />
     <link rel="icon" type="image/x-icon" href="favicon.ico">
     <link rel="font" type="font/ttf" href="fonts/carleton.ttf">
-    <link rel="background" type="image/webp" href="images/background.webp">
+    <link rel="preload" as="image" type="image/webp" href="images/background.webp">
     <link rel="preload" id="webassembly" />
     <script type="importmap"></script>
 
@@ -64,32 +53,13 @@
             font-display: swap;
         }
 
-        html {
-            color: #ffffce;
-            font-family: 'Carleton';
-            margin: 0;
-            padding: 0;
-            height: 100%;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-        }
-
-        body, html {
-            margin: 0;
-            padding: 0;
-            height: 100%;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-        }
     </style>
 </head>
 
 <body>
     <div id="app">
-        <main>
-            <img src="icon-512.png" style="position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); width: 4rem; height: 4rem" alt="PDFtoImage Logo" />
+        <main class="game-screen">
+            <img src="icon-512.png" style="position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); width: 4rem; height: 4rem" alt="NewDarkGlobalServer Logo" />
             <svg class="loading-progress" style="position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); opacity: 0.8">
                 <circle r="40%" cx="50%" cy="50%" />
                 <circle r="40%" cx="50%" cy="50%" />

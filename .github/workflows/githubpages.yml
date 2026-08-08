@@ -34,9 +34,9 @@ jobs:
             sed -i 's/"action": "\/"/"action": "\/${{github.event.repository.name}}\/"/g' manifest.webmanifest
             sed -i 's/"action": "\/receive-webshare"/"action": "\/${{github.event.repository.name}}\/receive-webshare"/g' manifest.webmanifest
       - name: Restore
-        run: dotnet restore src/WebClient/WebClient.csproj
+        run: dotnet restore src/WebClient/WebClient.csproj -p:Configuration=Release
       - name: Publish
-        run: dotnet build src/WebClient/WebClient.csproj -c Release -p:PublishProfile=src/WebClient/Properties/PublishProfiles/PublishSite.pubxml -p:VersionSuffix=ci -p:DeployOnBuild=true --no-restore
+        run: dotnet build src/WebClient/WebClient.csproj -c Release -p:PublishProfile=src/WebClient/Properties/PublishProfiles/PublishSite.pubxml -p:VersionSuffix=ci --no-restore
       - name: Create .nojekyll file
         run: touch src/WebClient/bin/Publish/wwwroot/.nojekyll
       - name: Update service-worker-assets.js hashes

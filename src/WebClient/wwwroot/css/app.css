@@ -1,3 +1,87 @@
+html {
+    background: #010000;
+    color: #ffffce;
+    color-scheme: dark;
+    font-family: 'Carleton';
+    margin: 0;
+    padding: 0;
+    width: 100%;
+    min-height: 100%;
+}
+
+body {
+    background: #010000;
+    margin: 0;
+    padding: 0;
+    width: 100%;
+    min-height: 100vh;
+    overflow: hidden;
+}
+
+#app {
+    display: grid;
+    place-items: center;
+    width: 100%;
+    min-height: 100vh;
+    overflow: hidden;
+}
+
+.game-screen {
+    position: relative;
+    width: min(100vw, calc(100vh * 4 / 3));
+    aspect-ratio: 4 / 3;
+    display: grid;
+    grid-template-rows: auto 1fr auto;
+    gap: 5px;
+    overflow: hidden;
+    background: url('../images/background.webp') center / 100% 100% no-repeat;
+}
+
+.status-message {
+    position: absolute;
+    top: 45%;
+    left: 10%;
+    right: 12%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: clamp(0px, 4vw, 3vh);
+    pointer-events: none;
+}
+
+.status-message p {
+    width: 100%;
+    margin: 0;
+    text-align: center;
+    white-space: pre-line;
+}
+
+.version-footer {
+    position: absolute;
+    bottom: 0;
+    left: 0;
+    width: 100%;
+    text-align: center;
+    opacity: 0.15;
+    font-size: clamp(0px, 2vh, 1.75vw);
+    pointer-events: none;
+}
+
+.version-footer p {
+    margin: 0;
+}
+
+@supports (height: 100dvh) {
+    body,
+    #app {
+        min-height: 100dvh;
+    }
+
+    .game-screen {
+        width: min(100vw, calc(100dvh * 4 / 3));
+    }
+}
+
 .valid.modified:not([type=checkbox]) {
     outline: 1px solid #26b050;
 }

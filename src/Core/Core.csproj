@@ -4,7 +4,7 @@
     <TargetFramework>net10.0</TargetFramework>
     <AssemblyName>Core</AssemblyName>
     <RootNamespace>Sungaila.NewDark.Core</RootNamespace>
-    <VersionPrefix>1.4.2</VersionPrefix>
+    <VersionPrefix>$(ProductVersion)</VersionPrefix>
     <VersionSuffix></VersionSuffix>
   </PropertyGroup>
 
