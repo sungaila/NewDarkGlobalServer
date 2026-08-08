@@ -1,54 +1,56 @@
 ﻿@page "/"
-@using Sungaila.NewDark.Core
 @using Microsoft.AspNetCore.Components.QuickGrid
 
 <PageTitle>Thief 2 server list</PageTitle>
 
 <main class="game-screen">
-    <div style="display: grid; grid-template-columns: 1fr auto auto; gap: 5px; margin: 10% 12% 0% 10%; font-size: clamp(0px, 2vh, 2vw)">
-        <input @bind="Model.GlobalServerAddress" id="globalserveraddress" type="url" autocomplete="on" autocapitalize="off" spellcheck="false" placeholder="WebSocket address of the Global Server" required />
+	<div style="display: grid; grid-template-columns: 1fr auto auto; gap: 5px; margin: 10% 12% 0% 10%; font-size: clamp(0px, 2vh, 2vw)">
+		<input @bind="Model.GlobalServerAddress" id="globalserveraddress" type="url" autocomplete="on" autocapitalize="off" spellcheck="false" placeholder="WebSocket address of the Global Server" required />
 
-        <div style="display: flex; align-items: center;">
-            <input  @bind="Model.ShowClosed" id="showclosed" type="checkbox" />
-            <label for="showclosed" style="margin: 0;">
-                Show closed <span title="The host must leave and re-host the game for the players to join.">🛈</span>
-            </label>
-        </div>
+		<div style="display: flex; align-items: center;">
+			<input @bind="Model.ShowClosed" id="showclosed" type="checkbox" />
+			<label for="showclosed" style="margin: 0;">
+				Show closed <span title="The host must leave and re-host the game for the players to join.">🛈</span>
+			</label>
+		</div>
 
-        <div style="display: flex; align-items: center;">
-            <input @bind="Model.ShowDenied" id="showdenied" type="checkbox" />
-            <label for="showdenied" style="margin: 0;">
-                Show denied <span title="These servers are listed in the global server, but the global server was unable to connect to the game session (firewall, NAT issues, etc.). These servers are not displayed in the in-game server list, but you may be able to join directly via the IP address.">🛈</span>
-            </label>
-        </div>
-    </div>
+		<div style="display: flex; align-items: center;">
+			<input @bind="Model.ShowDenied" id="showdenied" type="checkbox" />
+			<label for="showdenied" style="margin: 0;">
+				Show denied <span title="These servers are listed in the global server, but the global server was unable to connect to the game session (firewall, NAT issues, etc.). These servers are not displayed in the in-game server list, but you may be able to join directly via the IP address.">🛈</span>
+			</label>
+		</div>
+	</div>
 
-    <div style="overflow-x: hidden; overflow-y: auto; margin: 0% 12% 10% 10%; font-size: clamp(0px, 1.8vw, 2.4vh);">
-        <QuickGrid Items="Model.ServersFiltered"
-                   ItemKey="(s => s.Address)">
+	<div style="overflow-x: hidden; overflow-y: auto; margin: 0% 12% 10% 10%; font-size: clamp(0px, 1.8vw, 2.4vh);">
+		@if (Model.Servers.Count > 0)
+		{
+			<QuickGrid Items="Model.ServersFiltered"
+					   ItemKey="(s => s.Address)">
 
-            <PropertyColumn Property="@(s => s.ServerName)" Title="Server" Sortable="true" IsDefaultSortColumn="true" InitialSortDirection="SortDirection.Ascending" Class="server-col" />
-            <PropertyColumn Property="@(s => s.Address)" Title="Address" Sortable="true" Class="address-col" />
-            <PropertyColumn Property="@(s => s.MapName)" Title="Map" Sortable="true" Class="map-col" />
-            <TemplateColumn SortBy="@PlayerSort" Title="Plrs" Sortable="true" Class="players-col">@context.Players</TemplateColumn>
-            <PropertyColumn Property="@(s => s.StatusAsString)" Sortable="true" Title="Status" Class="status-col" />
+				<PropertyColumn Property="@(s => s.ServerName)" Title="Server" Sortable="true" IsDefaultSortColumn="true" InitialSortDirection="SortDirection.Ascending" Class="server-col" />
+				<PropertyColumn Property="@(s => s.Address)" Title="Address" Sortable="true" Class="address-col" />
+				<PropertyColumn Property="@(s => s.MapName)" Title="Map" Sortable="true" Class="map-col" />
+				<TemplateColumn SortBy="@PlayerSort" Title="Plrs" Sortable="true" Class="players-col">@context.Players</TemplateColumn>
+				<PropertyColumn Property="@(s => s.StatusAsString)" Sortable="true" Title="Status" Class="status-col" />
 
-        </QuickGrid>
-    </div>
+			</QuickGrid>
+		}
+	</div>
 
-    <div style="display: grid; grid-template-columns: auto auto; gap: 5px; margin: 0% 23% 6% 20%; align-items: center;">
-        <button type="button" class="link-style" style="text-align: center; margin: 0% 33% 0% 0%; font-size: clamp(0px, 4vw, 5vh);" @onclick="OnRefresh">Refresh</button>
-        <a href="https://github.com/sungaila/NewDarkGlobalServer" target="_blank" rel="noopener noreferrer" style="text-align: center; margin: 0% 0% 0% 30%; font-size: clamp(0px, 4vw, 5vh);">GitHub</a>
-    </div>
+	<div style="display: grid; grid-template-columns: auto auto; gap: 5px; margin: 0% 23% 6% 20%; align-items: center;">
+		<button type="button" class="link-style" style="text-align: center; margin: 0% 33% 0% 0%; font-size: clamp(0px, 4vw, 5vh);" @onclick="OnRefresh">Refresh</button>
+		<a href="https://github.com/sungaila/NewDarkGlobalServer" target="_blank" rel="noopener noreferrer" style="text-align: center; margin: 0% 0% 0% 30%; font-size: clamp(0px, 4vw, 5vh);">GitHub</a>
+	</div>
 
-    @if (Model.StatusMessage != null)
-    {
-        <div class="status-message">
-            <p>@Model.StatusMessage</p>
-        </div>
-    }
+	@if (Model.StatusMessage != null)
+	{
+		<div class="status-message">
+			<p>@Model.StatusMessage</p>
+		</div>
+	}
 
-    <footer class="version-footer">
-        <p>@Model.InformationalVersion</p>
-    </footer>
+	<footer class="version-footer">
+		<p>@Model.InformationalVersion</p>
+	</footer>
 </main>
