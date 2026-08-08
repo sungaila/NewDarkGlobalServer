@@ -5,7 +5,7 @@ FROM mcr.microsoft.com/dotnet/runtime:10.0-alpine AS base
 USER $APP_UID
 WORKDIR /app
 
-FROM mcr.microsoft.com/dotnet/sdk:10.0-alpine-aot AS build
+FROM mcr.microsoft.com/dotnet/sdk:10.0-resolute-aot AS build
 ARG BUILD_CONFIGURATION=Release
 WORKDIR /src
 COPY ["src/GlobalServer/NewDarkGlobalServer.csproj", "src/GlobalServer/"]
@@ -24,7 +24,7 @@ USER root
 RUN apk add --no-cache gdb
 USER app
 
-FROM ${FINAL_BASE_IMAGE:-mcr.microsoft.com/dotnet/runtime-deps:10.0-alpine} AS final
+FROM ${FINAL_BASE_IMAGE:-mcr.microsoft.com/dotnet/runtime-deps:10.0-resolute-chiseled} AS final
 WORKDIR /app
 COPY --from=publish /app/publish .
 USER $APP_UID

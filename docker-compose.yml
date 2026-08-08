@@ -4,5 +4,10 @@ services:
     build:
       context: .
       dockerfile: src/GlobalServer/Dockerfile
+    restart: unless-stopped
+    security_opt:
+      - no-new-privileges:true
+    cap_drop:
+      - ALL
     ports:
       - 5199:5199

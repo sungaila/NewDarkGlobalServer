@@ -147,7 +147,7 @@ namespace Sungaila.NewDark.Core
 
         public readonly record struct ClientExitMessage(ExitReason ExitReason) : IMessage
         {
-            public MessageType Type => MessageType.ServerClosed;
+            public MessageType Type => MessageType.ClientExit;
 
             public ClientExitMessage(byte[] input) : this(default(ExitReason))
             {
