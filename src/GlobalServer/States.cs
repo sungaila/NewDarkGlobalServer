@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Net;
 using System.Net.Sockets;
+using System.Threading;
 using System.Threading.Tasks;
 using static Sungaila.NewDark.Core.Messages;
 
@@ -75,7 +76,7 @@ namespace Sungaila.NewDark.GlobalServer
             public DateTimeOffset Created { get; }
 
             /// <summary>
-            /// The last time <see cref="Socket.SendAsync"/> or <see cref="Socket.ReceiveAsync"/> had been called for this connection.
+            /// The last time <see cref="Socket.ReceiveAsync"/> had been called for this connection.
             /// </summary>
             public DateTimeOffset LastActivity { get; set; }
 
@@ -93,7 +94,7 @@ namespace Sungaila.NewDark.GlobalServer
             /// <summary>
             /// If this connection is closing or closed.
             /// </summary>
-            public bool IsDisconnected => Status == ConnectionStatus.Closed || Socket == null || !Socket.Connected;
+            public bool IsDisconnected => Status is ConnectionStatus.Closed or ConnectionStatus.InvalidMessageType;
 
             /// <param name="socket">The socket of the accepted connection.</param>
             /// <exception cref="ArgumentNullException"/>
@@ -111,6 +112,18 @@ namespace Sungaila.NewDark.GlobalServer
                 Created = DateTimeOffset.Now;
                 LastActivity = Created;
             }
+
+            private int _disconnectStarted;
+
+            /// <summary>
+            /// Attempts to mark this connection as disconnecting.
+            /// </summary>
+            public bool TryBeginDisconnect() => Interlocked.Exchange(ref _disconnectStarted, 1) == 0;
+
+            /// <summary>
+            /// A lock used to ensure that only one thread is sending data on this connection at a time.
+            /// </summary>
+            public SemaphoreSlim SendLock { get; } = new(1, 1);
         }
     }
 }

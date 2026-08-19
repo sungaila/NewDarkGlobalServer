@@ -51,6 +51,12 @@ namespace Sungaila.NewDark.Core
             public ServerInfo(byte[] input) : this(default, default, default, default, default, default, string.Empty, string.Empty)
             {
                 Port = (ushort)input[0..2].ShortToHostOrder();
+
+                if (Port == 0)
+                {
+                    throw new ArgumentException("ServerInfo contains port 0.", nameof(input));
+                }
+
                 StateFlags = (GameStateFlags)input[2];
                 Reserved1 = input[3];
                 Reserved2 = input[4];
@@ -63,15 +69,13 @@ namespace Sungaila.NewDark.Core
                 input[14..22].CopyTo(guidArray, 8);
                 GameId = new Guid(guidArray);
 
-                var part = input[22..]!;
-                var firstNullTerminator = Math.Min(Array.IndexOf(part, (byte)'\0'), 31);
+                var offset = 22;
+                var (serverName, bytesConsumed) = ReadNullTerminatedString(input, offset, 32);
+                ServerName = serverName;
+                offset += bytesConsumed;
 
-                ServerName = Encoding.ASCII.GetString(part, 0, firstNullTerminator).Trim('\0');
-
-                var mapNamePart = part[(firstNullTerminator+1)..];
-                firstNullTerminator = Math.Min(Array.IndexOf(mapNamePart, (byte)'\0'), 31);
-
-                MapName = Encoding.ASCII.GetString(mapNamePart, 0, firstNullTerminator).Trim('\0');
+                var (mapName, _) = ReadNullTerminatedString(input, offset, 32);
+                MapName = mapName;
             }
 
             public byte[] ToByteArray()
@@ -229,10 +233,8 @@ namespace Sungaila.NewDark.Core
 
                 Port = (ushort)input[2..4].ShortToHostOrder();
 
-                var part = input[4..]!;
-                var firstNullTerminator = Math.Min(Array.IndexOf(part, (byte)'\0'), 15);
-
-                ServerIP = Encoding.ASCII.GetString(part, 0, firstNullTerminator).Trim('\0');
+                var (serverIp, _) = ReadNullTerminatedString(input, 4, 16);
+                ServerIP = serverIp;
             }
 
             public byte[] ToByteArray()
@@ -260,10 +262,14 @@ namespace Sungaila.NewDark.Core
 
                 ServerInfo = new ServerInfo(input[2..]);
 
-                var part = input[(ServerInfo.ToByteArray().Length+2)..]!;
-                var firstNullTerminator = Math.Min(Array.IndexOf(part, (byte)'\0'), 15);
+                var serverIpOffset =
+                    2 + // MessageType
+                    22 + // fixed ServerInfo fields
+                    Encoding.ASCII.GetByteCount(ServerInfo.ServerName) + 1 + // NUL
+                    Encoding.ASCII.GetByteCount(ServerInfo.MapName) + 1;     // NUL
 
-                ServerIP = Encoding.ASCII.GetString(part, 0, firstNullTerminator).Trim('\0');
+                var (serverIp, _) = ReadNullTerminatedString(input, serverIpOffset, 16);
+                ServerIP = serverIp;
             }
 
             public byte[] ToByteArray()
@@ -424,6 +430,30 @@ namespace Sungaila.NewDark.Core
             {
                 throw new NotImplementedException();
             }
+        }
+
+        private static (string Value, int BytesConsumed) ReadNullTerminatedString(byte[] input, int offset, int maxBytes)
+        {
+            if (offset < 0 || offset > input.Length)
+                throw new ArgumentOutOfRangeException(nameof(offset));
+
+            var availableBytes = Math.Min(maxBytes, input.Length - offset);
+
+            var nullTerminator =
+                Array.IndexOf(
+                    input,
+                    (byte)'\0',
+                    offset,
+                    availableBytes);
+
+            if (nullTerminator < 0)
+            {
+                throw new ArgumentException($"String is not null-terminated within {maxBytes} bytes.", nameof(input));
+            }
+
+            var stringLength = nullTerminator - offset;
+
+            return (Encoding.ASCII.GetString(input, offset, stringLength), stringLength + 1);
         }
     }
 }

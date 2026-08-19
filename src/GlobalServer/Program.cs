@@ -79,6 +79,19 @@ namespace Sungaila.NewDark.GlobalServer
                 }
             });
 
+            var timeoutDirectPlayQueryOpt = new Option<int>("--timeoutdirectplayquery", "-d", "--timeout-directplay-query")
+            {
+                DefaultValueFactory = _ => (int)TimeSpan.FromSeconds(2).TotalSeconds,
+                Description = "DirectPlay 8 query timeout in seconds"
+            };
+            timeoutDirectPlayQueryOpt.Validators.Add(r =>
+            {
+                if (r.GetValueOrDefault<int>() < 1)
+                {
+                    r.AddError("DirectPlay 8 query timeout must be at least 1 second.");
+                }
+            });
+
             var timeoutUnidentifiedOpt = new Option<int>("--timeoutunidentified", "-u", "--timeout-unidentified")
             {
                 DefaultValueFactory = _ => (int)TimeSpan.FromSeconds(10).TotalSeconds,
@@ -158,6 +171,7 @@ namespace Sungaila.NewDark.GlobalServer
             root.Options.Add(portOpt);
             root.Options.Add(timeoutServerOpt);
             root.Options.Add(timeoutClientOpt);
+            root.Options.Add(timeoutDirectPlayQueryOpt);
             root.Options.Add(timeoutUnidentifiedOpt);
             root.Options.Add(showHeartbeatMinimalOpt);
             root.Options.Add(hideInvalidMessageTypesOpt);
@@ -207,6 +221,7 @@ namespace Sungaila.NewDark.GlobalServer
                     TimeSpan.FromSeconds(p.GetValue(timeoutUnidentifiedOpt)),
                     TimeSpan.FromSeconds(p.GetValue(timeoutServerOpt)),
                     TimeSpan.FromSeconds(p.GetValue(timeoutClientOpt)),
+                    TimeSpan.FromSeconds(p.GetValue(timeoutDirectPlayQueryOpt)),
                     p.GetValue(showHeartbeatMinimalOpt),
                     p.GetValue(hideInvalidMessageTypesOpt));
 

@@ -64,18 +64,19 @@ Usage:
   NewDarkGlobalServer [options]
 
 Options:
-  -p, --port <port>                                                        Port for this global server [default: 5199]
-  -s, --timeout-server, --timeoutserver <timeoutserver>                    Game server timeout in seconds [default: 180]
-  -c, --timeout-client, --timeoutclient <timeoutclient>                    Game client timeout in seconds [default: 3600]
-  -u, --timeout-unidentified, --timeoutunidentified <timeoutunidentified>  Timeout for connections to identify as client or server in seconds [default: 10]
-  -b, --show-heartbeat-minimal, --showheartbeatminimal                     Show HeartbeatMinimal messages in the log
-  -f, --hide-failed-conn, --hidefailedconn                                 Hide failed connection attempts (due to invalid or unknown messages) from the log
-  -t, --print-timestamps, --printtimestamps                                Add timestamps to the log output
-  -w, --websocket                                                          Activate the optional WebSocket for non-game clients
-  -n, --websocket-hostname, --websockethostname <websockethostname>        Set the hostname for the WebSocket [default: localhost]
-  -m, --websocket-port, --websocketport <websocketport>                    Set the port for the WebSocket [default: 5200]
-  -e, --websocket-ssl, --websocketssl                                      Activate SSL for the WebSocket
-  -v, --verbose                                                            Show more verbose messages in the log
-  -?, -h, --help                                                           Show help and usage information
-  --version                                                                Show version information
+  -p, --port <port>                                                                  Port for this global server [default: 5199]
+  -s, --timeout-server, --timeoutserver <timeoutserver>                              Game server timeout in seconds [default: 180]
+  -c, --timeout-client, --timeoutclient <timeoutclient>                              Game client timeout in seconds [default: 3600]
+  -d, --timeout-directplay-query, --timeoutdirectplayquery <timeoutdirectplayquery>  DirectPlay 8 query timeout in seconds [default: 2]
+  -u, --timeout-unidentified, --timeoutunidentified <timeoutunidentified>            Timeout for connections to identify as client or server in seconds [default: 10]
+  -b, --show-heartbeat-minimal, --showheartbeatminimal                               Show HeartbeatMinimal messages in the log
+  -f, --hide-failed-conn, --hidefailedconn                                           Hide failed connection attempts (due to invalid or unknown messages) from the log
+  -t, --print-timestamps, --printtimestamps                                          Add timestamps to the log output
+  -w, --websocket                                                                    Activate the optional WebSocket for non-game clients
+  -n, --websocket-hostname, --websockethostname <websockethostname>                  Set the hostname for the WebSocket [default: localhost]
+  -m, --websocket-port, --websocketport <websocketport>                              Set the port for the WebSocket [default: 5200]
+  -e, --websocket-ssl, --websocketssl                                                Activate SSL for the WebSocket
+  -v, --verbose                                                                      Show more verbose messages in the log
+  -?, -h, --help                                                                     Show help and usage information
+  --version                                                                          Show version information
 ```
