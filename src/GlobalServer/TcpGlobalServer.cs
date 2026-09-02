@@ -1,4 +1,6 @@
-﻿using Sungaila.NewDark.Core;
+﻿using Microsoft.Extensions.Hosting;
+using Microsoft.Extensions.Logging;
+using Sungaila.NewDark.Core;
 using System;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
@@ -8,7 +10,6 @@ using System.Net.Sockets;
 using System.Threading;
 using System.Threading.Tasks;
 using static Sungaila.NewDark.Core.Messages;
-using static Sungaila.NewDark.GlobalServer.Logging;
 using static Sungaila.NewDark.GlobalServer.States;
 
 namespace Sungaila.NewDark.GlobalServer
@@ -16,21 +17,27 @@ namespace Sungaila.NewDark.GlobalServer
     /// <summary>
     /// Represents a TCP socket server for the global server.
     /// </summary>
+    /// <param name="Logger">The logger used by the TCP server.</param>
+    /// <param name="ApplicationLifetime">The host lifetime used to distinguish normal disconnects from global server shutdown.</param>
     /// <param name="Port">The port the global server uses.</param>
     /// <param name="UnidentifiedConnectionTimeout">The timeout for connections have not sent requests yet.</param>
     /// <param name="ServerConnectionTimeout">The timeout for game servers.</param>
     /// <param name="ClientConnectionTimeout">The timeout for game clients.</param>
     /// <param name="DirectPlayQueryTimeout">The timeout for DirectPlay 8 queries.</param>
     /// <param name="ShowHeartbeatMinimal">If <see cref="HeartbeatMinimalMessage"/> should be logged.</param>
-    /// <param name="HideInvalidMessageTypes">If failed connections due to invalid message types should be logged.</param>
+    /// <param name="HideFailedConnections">If failed or unidentified connection attempts should be hidden from the log.</param>
+    /// <param name="Verbose">If verbose protocol details should be included in log messages.</param>
     internal sealed class TcpGlobalServer(
+        ILogger<TcpGlobalServer> Logger,
+        IHostApplicationLifetime ApplicationLifetime,
         int Port,
         TimeSpan UnidentifiedConnectionTimeout,
         TimeSpan ServerConnectionTimeout,
         TimeSpan ClientConnectionTimeout,
         TimeSpan DirectPlayQueryTimeout,
         bool ShowHeartbeatMinimal,
-        bool HideInvalidMessageTypes)
+        bool HideFailedConnections,
+        bool Verbose) : BackgroundService
     {
         /// <summary>
         /// The expected maximum message size.
@@ -57,28 +64,102 @@ namespace Sungaila.NewDark.GlobalServer
         /// </summary>
         private readonly ConcurrentDictionary<string, Connection> _connections = new();
 
+        private Socket? _listenerSocket;
+
         public IEnumerable<Connection> ServerConnections => _connections.Values.Where(c => c.Status == ConnectionStatus.AwaitServerCommand && c.ServerInfo != null);
 
-        public async Task RunAsync(CancellationToken cancellationToken)
+        private bool ShouldHideFailedConnection(Connection connection) =>
+            HideFailedConnections && !connection.WasIdentified;
+
+        private static bool IsExpectedConnectionTermination(SocketException ex) =>
+            ex.SocketErrorCode is SocketError.OperationAborted or SocketError.ConnectionAborted or SocketError.ConnectionReset;
+
+        private void LogConnectionAccepted(Connection connection)
+        {
+            if (connection.TryMarkAcceptedLogged())
+                Logger.LogInformation("Connection accepted (TCP) for {RemoteEndPoint}", connection.InitialEndPoint);
+        }
+
+        private bool PrepareConnectionLog(Connection connection)
+        {
+            if (ShouldHideFailedConnection(connection))
+                return false;
+
+            if (connection.WasIdentified)
+                LogConnectionAccepted(connection);
+
+            return true;
+        }
+
+        private void LogConnections()
+        {
+            var currentConnections = _connections.Values.Where(c => !c.IsDisconnected).ToList();
+            var connectionCount = currentConnections.Count;
+            var serverOpenCount = currentConnections.Count(c => c.Status == ConnectionStatus.AwaitServerCommand && c.ServerInfo?.StateFlags != GameStateFlags.Closed);
+            var serverClosedCount = currentConnections.Count(c => c.Status == ConnectionStatus.AwaitServerCommand && c.ServerInfo?.StateFlags == GameStateFlags.Closed);
+            var clientCount = currentConnections.Count(c => c.Status == ConnectionStatus.AwaitClientCommand);
+
+            Logger.LogInformation(
+                "Open connections: {ConnectionCount} ({OpenServerCount} open servers, {ClosedServerCount} closed servers, {ClientCount} clients)",
+                connectionCount,
+                serverOpenCount,
+                serverClosedCount,
+                clientCount);
+        }
+
+        public override async Task StartAsync(CancellationToken cancellationToken)
         {
             var localEndPoint = new IPEndPoint(IPAddress.Any, Port);
+            var socket = new Socket(AddressFamily.InterNetwork, SocketType.Stream, ProtocolType.Tcp);
 
-            LogWriteLine($"Bind {localEndPoint} and await TCP connections");
-
-            using var socket = new Socket(AddressFamily.InterNetwork, SocketType.Stream, ProtocolType.Tcp);
+            Logger.LogInformation("Bind {LocalEndPoint} and await TCP connections", localEndPoint);
 
             try
             {
                 socket.Bind(localEndPoint);
                 socket.Listen();
+                _listenerSocket = socket;
+
+                // Complete the actual socket setup before the host startup completes.
+                // With systemd Type=notify this ensures READY=1 is only sent after Bind/Listen succeeded.
+                await base.StartAsync(cancellationToken);
+            }
+            catch (OperationCanceledException) when (cancellationToken.IsCancellationRequested)
+            {
+                _listenerSocket = null;
+                socket.Dispose();
+                throw;
             }
             catch (Exception ex)
             {
-                ErrorWriteLine(default, "Failed to bind TCP");
-                ErrorWriteLine(default, ex.ToString());
+                _listenerSocket = null;
+                socket.Dispose();
+                Logger.LogCritical(ex, "Failed to start TCP server on {LocalEndPoint}", localEndPoint);
+                Environment.ExitCode = 1;
                 throw;
             }
+        }
 
+        protected override async Task ExecuteAsync(CancellationToken cancellationToken)
+        {
+            try
+            {
+                await RunServerAsync(cancellationToken);
+            }
+            catch (OperationCanceledException) when (cancellationToken.IsCancellationRequested)
+            {
+                // Normal host shutdown.
+            }
+            catch
+            {
+                Environment.ExitCode = 1;
+                throw;
+            }
+        }
+
+        private async Task RunServerAsync(CancellationToken cancellationToken)
+        {
+            var socket = _listenerSocket ?? throw new InvalidOperationException("TCP listener was not initialized.");
             var cleanupTask = HandleCleanupAsync(cancellationToken);
 
             while (!cancellationToken.IsCancellationRequested)
@@ -97,27 +178,28 @@ namespace Sungaila.NewDark.GlobalServer
                     var newConnection = new Connection(clientSocket);
                     _connections.TryAdd(newConnection.InitialEndPoint.ToString(), newConnection);
 
-                    LogWriteLineDelayed(newConnection.Id, "Connection accepted (TCP)", $"for {clientSocket.RemoteEndPoint}");
+                    if (!HideFailedConnections)
+                        LogConnectionAccepted(newConnection);
 
                     newConnection.Task = HandleConnectionAsync(clientSocket, newConnection, cancellationToken);
                 }
                 catch (SocketException ex)
                 {
-                    ErrorWriteLine(default, "Failed to establish connection");
-                    ErrorWriteLine(default, ex.ToString());
+                    Logger.LogError(ex, "Failed to establish connection");
                 }
                 catch (Exception ex) when (ex is TaskCanceledException || ex is OperationCanceledException)
                 {
-                    LogWriteLine("Server terminated. Shutting down ...");
+                    Logger.LogInformation("Server terminated. Shutting down ...");
                 }
             }
 
             socket.Close();
+            _listenerSocket = null;
 
             await cleanupTask;
             await Task.WhenAll(_connections.Where(c => c.Value.Task != null).Select(c => c.Value.Task!).ToList());
 
-            LogWriteLine("Server stopped.");
+            Logger.LogInformation("Server stopped.");
             return;
         }
 
@@ -132,53 +214,67 @@ namespace Sungaila.NewDark.GlobalServer
                     cancellationToken.ThrowIfCancellationRequested();
 
                     var buffer = new byte[NetworkBufferSize];
-
                     var length = await socket.ReceiveAsync(buffer, default, cancellationToken);
 
                     if (length == 0)
                     {
-                        LogWriteLine(connection.Id, "Connection closed", $"with {connection.InitialEndPoint}");
+                        if (PrepareConnectionLog(connection))
+                            Logger.LogInformation("Connection closed by {RemoteEndPoint}", connection.InitialEndPoint);
 
                         return;
                     }
 
                     if (length < 2)
                     {
-                        ErrorWriteLine(connection.Id, "Received message is shorter than the message header", $"({connection.InitialEndPoint})");
+                        if (PrepareConnectionLog(connection))
+                            Logger.LogWarning("Received message from {RemoteEndPoint} is shorter than the message header: {Length} byte(s)", connection.InitialEndPoint, length);
 
                         connection.Status = ConnectionStatus.InvalidMessageType;
                         return;
                     }
 
                     connection.LastActivity = DateTimeOffset.Now;
+                    var messageType = (MessageType)buffer[0..2].ShortToHostOrder();
 
-                    switch ((MessageType)buffer[0..2].ShortToHostOrder())
+                    switch (messageType)
                     {
                         case MessageType.ListRequest:
                             if (length != 4)
                             {
-                                ErrorWriteLine(connection.Id, $"{typeof(ListRequestMessage).Name} received has an invalid length", $"({socket.RemoteEndPoint})");
+                                if (PrepareConnectionLog(connection))
+                                    Logger.LogWarning("{MessageType} received from {RemoteEndPoint} has invalid length {Length}; expected {ExpectedLength}", nameof(ListRequestMessage), connection.InitialEndPoint, length, 4);
+
                                 return;
                             }
 
                             if (connection.Status == ConnectionStatus.AwaitServerCommand)
                             {
-                                ErrorWriteLine(connection.Id, "Game server sent ListRequestMessage (message is client only)", $"({socket.RemoteEndPoint})");
+                                if (PrepareConnectionLog(connection))
+                                    Logger.LogWarning("Game server {RemoteEndPoint} sent client-only {MessageType}", connection.InitialEndPoint, nameof(ListRequestMessage));
+
+                                return;
+                            }
+
+                            var listRequest = new ListRequestMessage(buffer[..length]);
+
+                            if (listRequest.ProtocolVersion > SupportedProtocolVersion)
+                            {
+                                if (PrepareConnectionLog(connection))
+                                    Logger.LogWarning(
+                                        "Game client {RemoteEndPoint} sent unsupported protocol version {ProtocolVersion}; maximum supported is {SupportedProtocolVersion}",
+                                        connection.InitialEndPoint,
+                                        listRequest.ProtocolVersion,
+                                        SupportedProtocolVersion);
+
                                 return;
                             }
 
                             connection.Status = ConnectionStatus.AwaitClientCommand;
+                            connection.MarkIdentified();
+                            PrepareConnectionLog(connection);
+                            Logger.LogInformation("{MessageType} received from {RemoteEndPoint}", nameof(ListRequestMessage), connection.InitialEndPoint);
 
-                            var listRequest = new ListRequestMessage(buffer[..length]);
-                            LogWriteLine(connection.Id, typeof(ListRequestMessage).Name, $"received from {socket.RemoteEndPoint}");
-
-                            if (listRequest.ProtocolVersion > SupportedProtocolVersion)
-                            {
-                                ErrorWriteLine(connection.Id, $"Game client sent a higher ProtocolVersion ({listRequest.ProtocolVersion}) than supported ({SupportedProtocolVersion})", $"({socket.RemoteEndPoint})");
-                                return;
-                            }
-
-                            ConnectionsWriteLine(_connections.Values);
+                            LogConnections();
 
                             foreach (var otherConnection in ServerConnections.ToList())
                             {
@@ -197,7 +293,21 @@ namespace Sungaila.NewDark.GlobalServer
 
                                 await SendAllAsync(connection, serverInfoMessage.ToByteArray(), cancellationToken);
 
-                                LogWriteLine(connection.Id, serverInfoMessage.GetType().Name, $"sent to {socket.RemoteEndPoint}", $"(\"{serverInfoMessage.ServerInfo.ServerName}\", {serverInfoMessage.ServerIP}, \"{serverInfoMessage.ServerInfo.MapName}\", {serverInfoMessage.ServerInfo.StateFlags})");
+                                if (Verbose)
+                                {
+                                    Logger.LogInformation(
+                                        "{MessageType} sent to {RemoteEndPoint}: ServerName={ServerName}, ServerIP={ServerIP}, MapName={MapName}, StateFlags={StateFlags}",
+                                        nameof(ServerInfoMessage),
+                                        connection.InitialEndPoint,
+                                        serverInfoMessage.ServerInfo.ServerName,
+                                        serverInfoMessage.ServerIP,
+                                        serverInfoMessage.ServerInfo.MapName,
+                                        serverInfoMessage.ServerInfo.StateFlags);
+                                }
+                                else
+                                {
+                                    Logger.LogInformation("{MessageType} sent to {RemoteEndPoint}", nameof(ServerInfoMessage), connection.InitialEndPoint);
+                                }
                             }
 
                             break;
@@ -208,23 +318,31 @@ namespace Sungaila.NewDark.GlobalServer
                             // up to 31 characters for the map name.
                             if (length < 28 || length > 90)
                             {
-                                ErrorWriteLine(connection.Id, $"{typeof(HeartbeatMessage).Name} received has an invalid length", $"({socket.RemoteEndPoint})");
+                                if (PrepareConnectionLog(connection))
+                                    Logger.LogWarning("{MessageType} received from {RemoteEndPoint} has invalid length {Length}; expected 28-90 bytes", nameof(HeartbeatMessage), connection.InitialEndPoint, length);
+
                                 return;
                             }
 
                             if (connection.Status == ConnectionStatus.AwaitClientCommand)
                             {
-                                ErrorWriteLine(connection.Id, "Game client sent HeartbeatMessage (message is server only)", $"({socket.RemoteEndPoint})");
+                                if (PrepareConnectionLog(connection))
+                                    Logger.LogWarning("Game client {RemoteEndPoint} sent server-only {MessageType}", connection.InitialEndPoint, nameof(HeartbeatMessage));
+
                                 return;
                             }
 
                             var heartbeat = new HeartbeatMessage(buffer[..length]);
 
-                            LogWriteLine(connection.Id, typeof(HeartbeatMessage).Name, $"received from {socket.RemoteEndPoint}", $"(\"{heartbeat.ServerInfo.ServerName}\", \"{heartbeat.ServerInfo.MapName}\", {heartbeat.ServerInfo.StateFlags})");
-
                             if (heartbeat.ProtocolVersion > SupportedProtocolVersion)
                             {
-                                ErrorWriteLine(connection.Id, $"Game server sent a higher ProtocolVersion ({heartbeat.ProtocolVersion}) than supported ({SupportedProtocolVersion})", $"({socket.RemoteEndPoint})");
+                                if (PrepareConnectionLog(connection))
+                                    Logger.LogWarning(
+                                        "Game server {RemoteEndPoint} sent unsupported protocol version {ProtocolVersion}; maximum supported is {SupportedProtocolVersion}",
+                                        connection.InitialEndPoint,
+                                        heartbeat.ProtocolVersion,
+                                        SupportedProtocolVersion);
+
                                 return;
                             }
 
@@ -234,8 +352,25 @@ namespace Sungaila.NewDark.GlobalServer
 
                             connection.ServerInfo = heartbeat.ServerInfo;
                             connection.Status = ConnectionStatus.AwaitServerCommand;
+                            connection.MarkIdentified();
+                            PrepareConnectionLog(connection);
 
-                            ConnectionsWriteLine(_connections.Values);
+                            if (Verbose)
+                            {
+                                Logger.LogInformation(
+                                    "{MessageType} received from {RemoteEndPoint}: ServerName={ServerName}, MapName={MapName}, StateFlags={StateFlags}",
+                                    nameof(HeartbeatMessage),
+                                    connection.InitialEndPoint,
+                                    heartbeat.ServerInfo.ServerName,
+                                    heartbeat.ServerInfo.MapName,
+                                    heartbeat.ServerInfo.StateFlags);
+                            }
+                            else
+                            {
+                                Logger.LogInformation("{MessageType} received from {RemoteEndPoint}", nameof(HeartbeatMessage), connection.InitialEndPoint);
+                            }
+
+                            LogConnections();
 
                             if (notifyClients)
                                 await NotifyServerAddOrUpdate(connection, cancellationToken);
@@ -246,18 +381,25 @@ namespace Sungaila.NewDark.GlobalServer
                         case MessageType.HeartbeatMinimal:
                             if (length != 2)
                             {
-                                ErrorWriteLine(connection.Id, $"{typeof(HeartbeatMinimalMessage).Name} received has an invalid length", $"({socket.RemoteEndPoint})");
+                                if (PrepareConnectionLog(connection))
+                                    Logger.LogWarning("{MessageType} received from {RemoteEndPoint} has invalid length {Length}; expected {ExpectedLength}", nameof(HeartbeatMinimalMessage), connection.InitialEndPoint, length, 2);
+
                                 return;
                             }
 
                             if (connection.Status != ConnectionStatus.AwaitServerCommand || connection.ServerInfo == null)
                             {
-                                ErrorWriteLine(connection.Id, "Game client sent HeartbeatMinimalMessage (message is server only)", $"({socket.RemoteEndPoint})");
+                                if (PrepareConnectionLog(connection))
+                                    Logger.LogWarning("Non-server connection {RemoteEndPoint} sent server-only {MessageType}", connection.InitialEndPoint, nameof(HeartbeatMinimalMessage));
+
                                 return;
                             }
 
                             if (ShowHeartbeatMinimal)
-                                LogWriteLine(connection.Id, typeof(HeartbeatMinimalMessage).Name, $"received from {socket.RemoteEndPoint}");
+                            {
+                                PrepareConnectionLog(connection);
+                                Logger.LogInformation("{MessageType} received from {RemoteEndPoint}", nameof(HeartbeatMinimalMessage), connection.InitialEndPoint);
+                            }
 
                             await DirectPlayEnumQueryAsync(connection, cancellationToken);
                             break;
@@ -266,51 +408,65 @@ namespace Sungaila.NewDark.GlobalServer
                         case MessageType.ClientExit:
                             if (length != 3)
                             {
-                                ErrorWriteLine(connection.Id, $"{typeof(ClientExitMessage).Name} received has an invalid length", $"({socket.RemoteEndPoint})");
+                                if (PrepareConnectionLog(connection))
+                                    Logger.LogWarning("{MessageType} received from {RemoteEndPoint} has invalid length {Length}; expected {ExpectedLength}", nameof(ClientExitMessage), connection.InitialEndPoint, length, 3);
+
                                 return;
                             }
 
                             if (connection.Status != ConnectionStatus.AwaitClientCommand)
                             {
-                                if (connection.Status == ConnectionStatus.AwaitServerCommand)
-                                    ErrorWriteLine(connection.Id, "Game server sent ClientExitMessage (message is client only)", $"({socket.RemoteEndPoint})");
-                                else if (connection.Status == ConnectionStatus.NewAndUnidentified)
-                                    ErrorWriteLine(connection.Id, "Unidentified connetion sent ClientExitMessage (message is client only)", $"({socket.RemoteEndPoint})");
+                                if (PrepareConnectionLog(connection))
+                                {
+                                    if (connection.Status == ConnectionStatus.AwaitServerCommand)
+                                        Logger.LogWarning("Game server {RemoteEndPoint} sent client-only {MessageType}", connection.InitialEndPoint, nameof(ClientExitMessage));
+                                    else if (connection.Status == ConnectionStatus.NewAndUnidentified)
+                                        Logger.LogWarning("Unidentified connection {RemoteEndPoint} sent client-only {MessageType}", connection.InitialEndPoint, nameof(ClientExitMessage));
+                                }
 
                                 return;
                             }
 
                             var clientExit = new ClientExitMessage(buffer[..length]);
-                            LogWriteLine(connection.Id, typeof(ClientExitMessage).Name, $"received from {socket.RemoteEndPoint}", $"({clientExit.ExitReason})");
+                            PrepareConnectionLog(connection);
+
+                            if (Verbose)
+                                Logger.LogInformation("{MessageType} received from {RemoteEndPoint}: ExitReason={ExitReason}", nameof(ClientExitMessage), connection.InitialEndPoint, clientExit.ExitReason);
+                            else
+                                Logger.LogInformation("{MessageType} received from {RemoteEndPoint}", nameof(ClientExitMessage), connection.InitialEndPoint);
+
                             return;
 
                         // this message seems to be unused
                         case MessageType.ServerClosed:
                             if (length != 2)
                             {
-                                ErrorWriteLine(connection.Id, $"{typeof(ServerClosedMessage).Name} received has an invalid length", $"({socket.RemoteEndPoint})");
+                                if (PrepareConnectionLog(connection))
+                                    Logger.LogWarning("{MessageType} received from {RemoteEndPoint} has invalid length {Length}; expected {ExpectedLength}", nameof(ServerClosedMessage), connection.InitialEndPoint, length, 2);
+
                                 return;
                             }
 
                             if (connection.Status != ConnectionStatus.AwaitServerCommand)
                             {
-                                if (connection.Status == ConnectionStatus.AwaitClientCommand)
-                                    ErrorWriteLine(connection.Id, "Game client sent ServerClosedMessage (message is server only)", $"({socket.RemoteEndPoint})");
-                                else if (connection.Status == ConnectionStatus.NewAndUnidentified)
-                                    ErrorWriteLine(connection.Id, "Unidentified connetion sent ServerClosedMessage (message is server only)", $"({socket.RemoteEndPoint})");
+                                if (PrepareConnectionLog(connection))
+                                {
+                                    if (connection.Status == ConnectionStatus.AwaitClientCommand)
+                                        Logger.LogWarning("Game client {RemoteEndPoint} sent server-only {MessageType}", connection.InitialEndPoint, nameof(ServerClosedMessage));
+                                    else if (connection.Status == ConnectionStatus.NewAndUnidentified)
+                                        Logger.LogWarning("Unidentified connection {RemoteEndPoint} sent server-only {MessageType}", connection.InitialEndPoint, nameof(ServerClosedMessage));
+                                }
 
                                 return;
                             }
 
-                            LogWriteLine(connection.Id, typeof(ServerClosedMessage).Name, $"received from {socket.RemoteEndPoint}");
+                            PrepareConnectionLog(connection);
+                            Logger.LogInformation("{MessageType} received from {RemoteEndPoint}", nameof(ServerClosedMessage), connection.InitialEndPoint);
                             return;
 
                         default:
-                            if (!HideInvalidMessageTypes)
-                            {
-                                CleanDelayed(connection.Id);
-                                ErrorWriteLine(connection.Id, "Unknown message type was received", $"({socket.RemoteEndPoint})");
-                            }
+                            if (PrepareConnectionLog(connection))
+                                Logger.LogWarning("Unknown message type {MessageType} received from {RemoteEndPoint}", (ushort)messageType, connection.InitialEndPoint);
 
                             connection.Status = ConnectionStatus.InvalidMessageType;
                             return;
@@ -318,27 +474,31 @@ namespace Sungaila.NewDark.GlobalServer
 
                     await Task.Delay(TimeSpan.FromMilliseconds(100), cancellationToken);
                 }
-
             }
-            catch (SocketException ex) when (ex.ErrorCode == (int)SocketError.OperationAborted || ex.ErrorCode == (int)SocketError.ConnectionAborted) { }
+            catch (SocketException ex) when (IsExpectedConnectionTermination(ex)) { }
             catch (SocketException ex)
             {
-                ErrorWriteLine(connection.Id, "Failed receiving message", $"from {connection.InitialEndPoint.Address}");
-                ErrorWriteLine(connection.Id, ex.ToString());
+                if (PrepareConnectionLog(connection))
+                    Logger.LogWarning(ex, "Failed receiving message from {RemoteAddress}", connection.InitialEndPoint.Address);
             }
             catch (TaskCanceledException) { }
             catch (OperationCanceledException) { }
             catch (Exception ex)
             {
-                ErrorWriteLine(connection.Id, "Failed handling message", $"from {connection.InitialEndPoint.Address}");
-                ErrorWriteLine(connection.Id, ex.ToString());
+                if (PrepareConnectionLog(connection))
+                    Logger.LogError(ex, "Failed handling message from {RemoteAddress}", connection.InitialEndPoint.Address);
             }
             finally
             {
-                if (connection.Status != ConnectionStatus.Closed && (connection.Status != ConnectionStatus.InvalidMessageType || !HideInvalidMessageTypes))
-                    LogWriteLine(connection.Id, "Connection lost", $"for {connection.InitialEndPoint}");
+                if (connection.Status != ConnectionStatus.Closed && PrepareConnectionLog(connection))
+                    Logger.LogInformation("Connection lost for {RemoteEndPoint}", connection.InitialEndPoint);
 
-                await DisconnectAsync(connection, cancellationToken);
+                // Once the host is stopping, finish local socket cleanup without a canceled token.
+                // DisconnectAsync suppresses RemoveServerMessage while ApplicationStopping is signaled.
+                var cleanupToken = ApplicationLifetime.ApplicationStopping.IsCancellationRequested
+                    ? CancellationToken.None
+                    : cancellationToken;
+                await DisconnectAsync(connection, cleanupToken);
             }
         }
 
@@ -372,15 +532,15 @@ namespace Sungaila.NewDark.GlobalServer
                 {
                     await SendAllAsync(connection, bytes, cancellationToken);
 
-                    LogWriteLine(connection.Id, message.GetType().Name, $"sent to {connection.Socket.RemoteEndPoint}");
+                    if (PrepareConnectionLog(connection))
+                        Logger.LogInformation("{MessageType} sent to {RemoteEndPoint}", message.GetType().Name, connection.InitialEndPoint);
                 }
                 catch (TaskCanceledException) { }
                 catch (OperationCanceledException) { }
-                catch (SocketException ex) when (ex.ErrorCode == (int)SocketError.OperationAborted || ex.ErrorCode == (int)SocketError.ConnectionAborted || ex.ErrorCode == (int)SocketError.ConnectionReset) { }
+                catch (SocketException ex) when (IsExpectedConnectionTermination(ex)) { }
                 catch (Exception ex)
                 {
-                    ErrorWriteLine(default, "Failed broadcast to client");
-                    ErrorWriteLine(default, ex.ToString());
+                    Logger.LogError(ex, "Failed broadcast to client");
                 }
             }
         }
@@ -443,12 +603,13 @@ namespace Sungaila.NewDark.GlobalServer
                             if (timeSinceLastActivity < timeout)
                                 continue;
 
-                            LogWriteLine($"Connection timeout: {connection.InitialEndPoint}");
+                            if (!ShouldHideFailedConnection(connection))
+                                Logger.LogInformation("Connection timeout: {RemoteEndPoint}", connection.InitialEndPoint);
 
                             await DisconnectAsync(connection, cancellationToken);
                         }
                     }
-                    catch (SocketException ex) when (ex.ErrorCode == (int)SocketError.OperationAborted || ex.ErrorCode == (int)SocketError.ConnectionAborted) { }
+                    catch (SocketException ex) when (IsExpectedConnectionTermination(ex)) { }
                 }
             }
             catch (TaskCanceledException) { }
@@ -460,7 +621,6 @@ namespace Sungaila.NewDark.GlobalServer
             if (!connection.TryBeginDisconnect())
                 return;
 
-            var previousStatus = connection.Status;
             // Capture before clearing. Non-null means this connection successfully registered a game server.
             var serverInfo = connection.ServerInfo;
 
@@ -471,7 +631,7 @@ namespace Sungaila.NewDark.GlobalServer
             // A simultaneous ListRequest must no longer see this server.
             _connections.TryRemove(connection.InitialEndPoint.ToString(), out _);
 
-            if (serverInfo is { } registeredServer)
+            if (!ApplicationLifetime.ApplicationStopping.IsCancellationRequested && serverInfo is { } registeredServer)
             {
                 await NotifyServerRemoval(connection, registeredServer, cancellationToken);
             }
@@ -491,12 +651,11 @@ namespace Sungaila.NewDark.GlobalServer
 
             connection.Socket.Close();
 
-            if (previousStatus != ConnectionStatus.InvalidMessageType || !HideInvalidMessageTypes)
+            if (!ShouldHideFailedConnection(connection))
             {
-                ConnectionsWriteLine(_connections.Values);
+                LogConnections();
             }
 
-            CleanDelayed(connection.Id);
         }
 
         private async Task DirectPlayEnumQueryAsync(Connection connection, CancellationToken cancellationToken)

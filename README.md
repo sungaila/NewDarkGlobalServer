@@ -70,8 +70,8 @@ Options:
   -d, --timeout-directplay-query, --timeoutdirectplayquery <timeoutdirectplayquery>  DirectPlay 8 query timeout in seconds [default: 2]
   -u, --timeout-unidentified, --timeoutunidentified <timeoutunidentified>            Timeout for connections to identify as client or server in seconds [default: 10]
   -b, --show-heartbeat-minimal, --showheartbeatminimal                               Show HeartbeatMinimal messages in the log
-  -f, --hide-failed-conn, --hidefailedconn                                           Hide failed connection attempts (due to invalid or unknown messages) from the log
-  -t, --print-timestamps, --printtimestamps                                          Add timestamps to the log output
+  -f, --hide-failed-conn, --hidefailedconn                                           Hide failed or unidentified connection attempts from the log
+  -t, --print-timestamps, --printtimestamps                                          Add timestamps to interactive console log output
   -w, --websocket                                                                    Activate the optional WebSocket for non-game clients
   -n, --websocket-hostname, --websockethostname <websockethostname>                  Set the hostname for the WebSocket [default: localhost]
   -m, --websocket-port, --websocketport <websocketport>                              Set the port for the WebSocket [default: 5200]
