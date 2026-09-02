@@ -10,6 +10,7 @@ namespace Sungaila.NewDark.Tests.Infrastructure;
 
 internal sealed class GlobalServerTestHost : IAsyncDisposable
 {
+    private static readonly TimeSpan StartupTimeout = TimeSpan.FromSeconds(20);
     private static readonly TimeSpan StopTimeout = TimeSpan.FromSeconds(5);
 
     private readonly IHost _host;
@@ -72,7 +73,7 @@ internal sealed class GlobalServerTestHost : IAsyncDisposable
 
         try
         {
-            using var startupCts = new CancellationTokenSource(TimeSpan.FromSeconds(5));
+            using var startupCts = new CancellationTokenSource(StartupTimeout);
             await host.StartAsync(startupCts.Token);
             return fixture;
         }

@@ -101,7 +101,12 @@ jobs:
     # Executes the test project normally on CoreCLR/JIT. Only the project graph
     # referenced by Tests.csproj is built, not the complete solution.
     - name: Test (JIT)
-      run: dotnet test --project src/Tests/Tests.csproj --configuration Release
+      run: >-
+        dotnet test --project src/Tests/Tests.csproj
+        --configuration Release
+        --output Detailed
+        --progress off
+        --ansi on
 
     # Native AOT is performed on the MTP/MSTest test application itself. The
     # referenced Core and NewDarkGlobalServer projects are linked into this
@@ -122,6 +127,9 @@ jobs:
         dotnet test
         --test-modules "${{ matrix.test_module }}"
         --root-directory artifacts/tests-aot
+        --output Detailed
+        --progress off
+        --ansi on
 
   docker:
     name: Docker
