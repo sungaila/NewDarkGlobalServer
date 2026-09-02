@@ -75,6 +75,10 @@
     <ProjectReference Include="..\Core\Core.csproj" />
   </ItemGroup>
 
+  <ItemGroup>
+    <InternalsVisibleTo Include="Tests" />
+  </ItemGroup>
+
   <Import Project="PropertiesSigning.targets" />
   <Import Project="CodeSigning.targets" />
 

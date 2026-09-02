@@ -9,6 +9,11 @@ on:
     branches:
       - '**'
 
+env:
+  DOTNET_CLI_CONTEXT_ANSI_PASS_THRU: "true"
+  DOTNET_SYSTEM_CONSOLE_ALLOW_ANSI_COLOR_REDIRECTION: "true"
+  TERM: xterm-256color
+
 jobs:
   build:
     name: Build
@@ -32,6 +37,92 @@ jobs:
         name: Binaries (linux-x64)
         path: src/GlobalServer/bin/Publish/linux-x64
         if-no-files-found: error
+
+  test:
+    name: Test (${{ matrix.os }})
+    runs-on: ${{ matrix.os }}
+    timeout-minutes: 30
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - os: windows-11-arm
+            rid: win-arm64
+            test_module: Tests.exe
+          - os: windows-2022
+            rid: win-x64
+            test_module: Tests.exe
+          - os: windows-2025
+            rid: win-x64
+            test_module: Tests.exe
+          - os: ubuntu-22.04
+            rid: linux-x64
+            test_module: Tests
+          - os: ubuntu-22.04-arm
+            rid: linux-arm64
+            test_module: Tests
+          - os: ubuntu-24.04
+            rid: linux-x64
+            test_module: Tests
+          - os: ubuntu-24.04-arm
+            rid: linux-arm64
+            test_module: Tests
+          - os: ubuntu-26.04
+            rid: linux-x64
+            test_module: Tests
+          - os: ubuntu-26.04-arm
+            rid: linux-arm64
+            test_module: Tests
+          - os: macos-14
+            rid: osx-arm64
+            test_module: Tests
+          - os: macos-15
+            rid: osx-arm64
+            test_module: Tests
+          - os: macos-15-intel
+            rid: osx-x64
+            test_module: Tests
+          - os: macos-26
+            rid: osx-arm64
+            test_module: Tests
+          - os: macos-26-intel
+            rid: osx-x64
+            test_module: Tests
+
+    steps:
+    - uses: actions/checkout@main
+
+    - name: Setup .NET
+      uses: actions/setup-dotnet@main
+      with:
+        dotnet-version: 10.x
+        dotnet-quality: 'ga'
+
+    # Executes the test project normally on CoreCLR/JIT. Only the project graph
+    # referenced by Tests.csproj is built, not the complete solution.
+    - name: Test (JIT)
+      run: dotnet test --project src/Tests/Tests.csproj --configuration Release
+
+    # Native AOT is performed on the MTP/MSTest test application itself. The
+    # referenced Core and NewDarkGlobalServer projects are linked into this
+    # native test module, so the same tests execute against AOT-compiled code.
+    - name: Publish tests (Native AOT)
+      run: >-
+        dotnet publish src/Tests/Tests.csproj
+        --configuration Release
+        --runtime ${{ matrix.rid }}
+        --self-contained true
+        --output artifacts/tests-aot
+        -p:PublishAot=true
+
+    # --test-modules runs an already-built MTP test application. No build or
+    # publish happens here; the selected module is the Native AOT test binary.
+    - name: Test (Native AOT)
+      run: >-
+        dotnet test
+        --test-modules "${{ matrix.test_module }}"
+        --root-directory artifacts/tests-aot
+
   docker:
     name: Docker
     runs-on: ubuntu-latest

@@ -97,7 +97,7 @@ namespace Sungaila.NewDark.Core
                 byteList.AddRange(Encoding.ASCII.GetBytes(ServerName[..Math.Min(ServerName.Length, 31)] + '\0'));
                 byteList.AddRange(Encoding.ASCII.GetBytes(MapName[..Math.Min(MapName.Length, 31)] + '\0'));
 
-                return byteList.ToArray();
+                return [.. byteList];
             }
         }
 
@@ -127,7 +127,7 @@ namespace Sungaila.NewDark.Core
                 byteList.AddRange(BitConverter.GetBytes(((short)Type).ToNetworkOrder()));
                 byteList.AddRange(BitConverter.GetBytes(ProtocolVersion.ToNetworkOrder()));
 
-                return byteList.ToArray();
+                return [.. byteList];
             }
         }
 
@@ -170,7 +170,7 @@ namespace Sungaila.NewDark.Core
                 byteList.AddRange(BitConverter.GetBytes(((short)Type).ToNetworkOrder()));
                 byteList.Add((byte)ExitReason);
 
-                return byteList.ToArray();
+                return [.. byteList];
             }
         }
 
@@ -198,7 +198,7 @@ namespace Sungaila.NewDark.Core
                 byteList.AddRange(BitConverter.GetBytes(ProtocolVersion.ToNetworkOrder()));
                 byteList.AddRange(ServerInfo.ToByteArray());
 
-                return byteList.ToArray();
+                return [.. byteList];
             }
         }
 
@@ -245,7 +245,7 @@ namespace Sungaila.NewDark.Core
                 byteList.AddRange(BitConverter.GetBytes(Port.ToNetworkOrder()));
                 byteList.AddRange(Encoding.ASCII.GetBytes(ServerIP[..Math.Min(ServerIP.Length, 15)] + '\0'));
 
-                return byteList.ToArray();
+                return [.. byteList];
             }
         }
 
@@ -280,7 +280,7 @@ namespace Sungaila.NewDark.Core
                 byteList.AddRange(ServerInfo.ToByteArray());
                 byteList.AddRange(Encoding.ASCII.GetBytes(ServerIP[..Math.Min(ServerIP.Length, 15)] + '\0'));
 
-                return byteList.ToArray();
+                return [.. byteList];
             }
         }
 
@@ -338,7 +338,7 @@ namespace Sungaila.NewDark.Core
                 byteList.Add(0x01);                                         // QueryType: This query contains an ApplicationGUID field
                 byteList.AddRange(Thief2GameId.ToByteArray());                   // ApplicationGUID: {00F682D7-AB11-4540-9FC2-C43E97358C73}
 
-                return byteList.ToArray();
+                return [.. byteList];
             }
         }
 

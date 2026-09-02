@@ -1,0 +1,12 @@
+<Solution>
+  <Folder Name="/Solution Items/">
+    <File Path="README.md" />
+  </Folder>
+  <Project Path="docker-compose.dcproj" Id="a0b1edf7-85ed-42b6-93d8-a20dd4d6726d">
+    <Build />
+  </Project>
+  <Project Path="src/Core/Core.csproj" />
+  <Project Path="src/GlobalServer/NewDarkGlobalServer.csproj" />
+  <Project Path="src/Tests/Tests.csproj" />
+  <Project Path="src/WebClient/WebClient.csproj" />
+</Solution>
