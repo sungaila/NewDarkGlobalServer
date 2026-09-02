@@ -13,7 +13,7 @@
     <VersionSuffix></VersionSuffix>
     <PublishAot>true</PublishAot>
     <ServerGarbageCollection>true</ServerGarbageCollection>
-		<SatelliteResourceLanguages>en</SatelliteResourceLanguages>
+    <SatelliteResourceLanguages>en</SatelliteResourceLanguages>
   </PropertyGroup>
 
   <!-- C# compiler -->
@@ -22,7 +22,7 @@
     <Nullable>enable</Nullable>
     <Features>strict</Features>
     <WarningsAsErrors>nullable</WarningsAsErrors>
-		<NoWarn>CA1873</NoWarn>
+    <NoWarn>CA1873</NoWarn>
   </PropertyGroup>
 
   <!-- Trimming options -->
