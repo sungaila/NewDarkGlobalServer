@@ -1,29 +1,21 @@
-﻿using System;
-using System.Collections.Generic;
+﻿using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Hosting;
+using Microsoft.Extensions.Hosting.Systemd;
+using Microsoft.Extensions.Hosting.WindowsServices;
+using Microsoft.Extensions.Logging;
+using System;
 using System.CommandLine;
 using System.Globalization;
 using System.Reflection;
-using System.Threading;
 using System.Threading.Tasks;
-using static Sungaila.NewDark.GlobalServer.Logging;
 
 namespace Sungaila.NewDark.GlobalServer
 {
     public static partial class Program
     {
-        internal static TcpGlobalServer? _tcp = null;
-        internal static WebSocketGlobalServer? _webSocket = null;
-
         public static async Task<int> Main(string[] args)
         {
             Console.Title = "Thief 2 Multiplayer Global Server";
-
-            var cts = new CancellationTokenSource();
-            Console.CancelKeyPress += (_, e) =>
-            {
-                e.Cancel = true;
-                cts.Cancel();
-            };
 
             try
             {
@@ -111,16 +103,16 @@ namespace Sungaila.NewDark.GlobalServer
                 Description = "Show HeartbeatMinimal messages in the log"
             };
 
-            var hideInvalidMessageTypesOpt = new Option<bool>("--hidefailedconn", "-f", "--hide-failed-conn")
+            var hideFailedConnectionsOpt = new Option<bool>("--hidefailedconn", "-f", "--hide-failed-conn")
             {
                 DefaultValueFactory = _ => false,
-                Description = "Hide failed connection attempts (due to invalid or unknown messages) from the log"
+                Description = "Hide failed or unidentified connection attempts from the log"
             };
 
             var printTimestampsOpt = new Option<bool>("--printtimestamps", "-t", "--print-timestamps")
             {
                 DefaultValueFactory = _ => false,
-                Description = "Add timestamps to the log output"
+                Description = "Add timestamps to interactive console log output"
             };
 
             var websocketOpt = new Option<bool>("--websocket", "-w")
@@ -174,7 +166,7 @@ namespace Sungaila.NewDark.GlobalServer
             root.Options.Add(timeoutDirectPlayQueryOpt);
             root.Options.Add(timeoutUnidentifiedOpt);
             root.Options.Add(showHeartbeatMinimalOpt);
-            root.Options.Add(hideInvalidMessageTypesOpt);
+            root.Options.Add(hideFailedConnectionsOpt);
             root.Options.Add(printTimestampsOpt);
             root.Options.Add(websocketOpt);
             root.Options.Add(websocketHostnameOpt);
@@ -193,7 +185,7 @@ namespace Sungaila.NewDark.GlobalServer
 
                 bool hostSpecified = hostRes is not null && hostRes.Implicit == false;
                 bool portSpecified = portRes is not null && portRes.Implicit == false;
-                bool sslSpecified = sslRes is not null && sslRes.Implicit  == false;
+                bool sslSpecified = sslRes is not null && sslRes.Implicit == false;
 
                 if (!websocket)
                 {
@@ -210,35 +202,106 @@ namespace Sungaila.NewDark.GlobalServer
 
             root.SetAction(async p =>
             {
-                var infoVersion = Assembly.GetExecutingAssembly()?.GetCustomAttribute<AssemblyInformationalVersionAttribute>()?.InformationalVersion;
-                Console.WriteLine($"Starting {typeof(Program).Assembly.GetName().Name} {infoVersion ?? typeof(Program).Assembly.GetName().Version?.ToString()}");
+                var printTimestamps = p.GetValue(printTimestampsOpt);
 
-                Verbose = p.GetValue(verboseOpt);
-                PrintTimeStamps = p.GetValue(printTimestampsOpt);
+                var builder = Host.CreateApplicationBuilder(new HostApplicationBuilderSettings
+                {
+                    Args = [],
+                    ApplicationName = typeof(Program).Assembly.GetName().Name,
+                    ContentRootPath = AppContext.BaseDirectory
+                });
 
-                _tcp = new TcpGlobalServer(
+                // Both integrations are context-aware. In a normal console or Docker container,
+                // ConsoleLifetime remains active and handles SIGINT/SIGTERM gracefully.
+                builder.Services.AddSystemd();
+                builder.Services.AddWindowsService(options => options.ServiceName = "NewDarkGlobalServer");
+
+                // Use only the provider that matches the current host. This keeps logging small
+                // and avoids duplicate output from the default Host logging providers.
+                builder.Logging.ClearProviders();
+                builder.Logging.SetMinimumLevel(LogLevel.Information);
+                builder.Logging.AddFilter("Microsoft", LogLevel.Warning);
+                builder.Logging.AddFilter("System", LogLevel.Warning);
+
+                if (WindowsServiceHelpers.IsWindowsService())
+                {
+                    builder.Logging.AddEventLog(settings =>
+                    {
+#pragma warning disable CA1416
+                        settings.SourceName = "NewDarkGlobalServer";
+                        settings.Filter = (category, level) =>
+                            level >= (category?.StartsWith("Microsoft", StringComparison.Ordinal) == true ||
+                                      category?.StartsWith("System", StringComparison.Ordinal) == true
+                                ? LogLevel.Warning
+                                : LogLevel.Information);
+#pragma warning restore CA1416
+                    });
+                }
+                else if (SystemdHelpers.IsSystemdService())
+                {
+                    // journald already owns timestamps and presentation. The systemd formatter
+                    // emits syslog priorities and intentionally does not add ANSI colors.
+                    builder.Logging.AddSystemdConsole(options =>
+                    {
+                        options.IncludeScopes = false;
+                        options.TimestampFormat = null;
+                    });
+                }
+                else
+                {
+                    // Interactive console and Docker stdout use the small built-in console logger.
+                    // Colors are handled by SimpleConsole and automatically disabled when needed.
+                    builder.Logging.AddSimpleConsole(options =>
+                    {
+                        options.IncludeScopes = false;
+                        options.SingleLine = true;
+                        options.TimestampFormat = printTimestamps ? "[yyyy-MM-dd'T'HH:mm:ss.fffzzz] " : null;
+                    });
+                }
+
+                builder.Services.Configure<HostOptions>(options =>
+                {
+                    options.ServicesStartConcurrently = false;
+                });
+
+                builder.Services.AddSingleton(sp => new TcpGlobalServer(
+                    sp.GetRequiredService<ILogger<TcpGlobalServer>>(),
+                    sp.GetRequiredService<IHostApplicationLifetime>(),
                     p.GetValue(portOpt),
                     TimeSpan.FromSeconds(p.GetValue(timeoutUnidentifiedOpt)),
                     TimeSpan.FromSeconds(p.GetValue(timeoutServerOpt)),
                     TimeSpan.FromSeconds(p.GetValue(timeoutClientOpt)),
                     TimeSpan.FromSeconds(p.GetValue(timeoutDirectPlayQueryOpt)),
                     p.GetValue(showHeartbeatMinimalOpt),
-                    p.GetValue(hideInvalidMessageTypesOpt));
-
-                var tasks = new List<Task> { _tcp.RunAsync(cts.Token) };
+                    p.GetValue(hideFailedConnectionsOpt),
+                    p.GetValue(verboseOpt)));
+                builder.Services.AddSingleton<IHostedService>(sp => sp.GetRequiredService<TcpGlobalServer>());
 
                 if (p.GetValue(websocketOpt))
                 {
-                    _webSocket = new WebSocketGlobalServer(p.GetValue(websocketHostnameOpt)!, p.GetValue(websocketPortOpt), p.GetValue(websocketSslOpt));
-                    tasks.Add(_webSocket.RunAsync(cts.Token));
+                    builder.Services.AddSingleton(sp => new WebSocketGlobalServer(
+                        sp.GetRequiredService<TcpGlobalServer>(),
+                        sp.GetRequiredService<ILogger<WebSocketGlobalServer>>(),
+                        sp.GetRequiredService<IHostApplicationLifetime>(),
+                        p.GetValue(websocketHostnameOpt)!,
+                        p.GetValue(websocketPortOpt),
+                        p.GetValue(websocketSslOpt)));
+                    builder.Services.AddSingleton<IHostedService>(sp => sp.GetRequiredService<WebSocketGlobalServer>());
                 }
 
-                await Task.WhenAll(tasks);
+                using var host = builder.Build();
+
+                var infoVersion = Assembly.GetExecutingAssembly()?.GetCustomAttribute<AssemblyInformationalVersionAttribute>()?.InformationalVersion;
+                var version = infoVersion ?? typeof(Program).Assembly.GetName().Version?.ToString();
+                host.Services.GetRequiredService<ILoggerFactory>()
+                    .CreateLogger("NewDarkGlobalServer")
+                    .LogInformation("Starting {ApplicationName} {Version}", typeof(Program).Assembly.GetName().Name, version);
+
+                await host.RunAsync();
             });
 
-            return await root
-                .Parse(args)
-                .InvokeAsync(cancellationToken: cts.Token);
+            var result = await root.Parse(args).InvokeAsync();
+            return result != 0 ? result : Environment.ExitCode;
         }
     }
 }

@@ -46,11 +46,6 @@ namespace Sungaila.NewDark.GlobalServer
         public class Connection
         {
             /// <summary>
-            /// An identifier for internal use.
-            /// </summary>
-            public Guid Id { get; } = Guid.NewGuid();
-
-            /// <summary>
             /// The socket used for this connection.
             /// </summary>
             public Socket Socket { get; }
@@ -112,6 +107,23 @@ namespace Sungaila.NewDark.GlobalServer
                 Created = DateTimeOffset.Now;
                 LastActivity = Created;
             }
+
+            /// <summary>
+            /// If the connection successfully identified as a game client or server at least once.
+            /// </summary>
+            public bool WasIdentified { get; private set; }
+
+            /// <summary>
+            /// Marks this connection as successfully identified.
+            /// </summary>
+            public void MarkIdentified() => WasIdentified = true;
+
+            private int _acceptedLogged;
+
+            /// <summary>
+            /// Attempts to mark the connection-accepted log entry as emitted.
+            /// </summary>
+            public bool TryMarkAcceptedLogged() => Interlocked.Exchange(ref _acceptedLogged, 1) == 0;
 
             private int _disconnectStarted;
 

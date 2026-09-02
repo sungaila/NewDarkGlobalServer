@@ -1,0 +1,25 @@
+<Solution>
+  <Configurations>
+    <BuildType Name="Debug" />
+    <BuildType Name="Release" />
+    <BuildType Name="ReleaseSigned" />
+  </Configurations>
+  <Folder Name="/Solution Items/">
+    <File Path="README.md" />
+  </Folder>
+  <Project Path="docker-compose.dcproj" Id="a0b1edf7-85ed-42b6-93d8-a20dd4d6726d">
+    <BuildType Solution="ReleaseSigned|*" Project="Release" />
+    <Build Solution="Debug|*" />
+    <Build Solution="Release|*" />
+  </Project>
+  <Project Path="src/Core/Core.csproj">
+    <BuildType Solution="ReleaseSigned|*" Project="Release" />
+  </Project>
+  <Project Path="src/GlobalServer/NewDarkGlobalServer.csproj" />
+  <Project Path="src/Tests/Tests.csproj">
+    <BuildType Solution="ReleaseSigned|*" Project="Release" />
+  </Project>
+  <Project Path="src/WebClient/WebClient.csproj">
+    <BuildType Solution="ReleaseSigned|*" Project="Release" />
+  </Project>
+</Solution>
