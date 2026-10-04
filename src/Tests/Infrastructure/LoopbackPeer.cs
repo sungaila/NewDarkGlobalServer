@@ -53,14 +53,27 @@ internal sealed class LoopbackPeer : IDisposable
 
     public async Task<IMessage> ReceiveMessageAsync()
     {
+        var bytes = await ReceiveMessageBytesAsync();
+        var type = (MessageType)bytes[..2].ShortToHostOrder();
+
+        return type switch
+        {
+            MessageType.ServerInfo => new ServerInfoMessage(bytes),
+            MessageType.RemoveServer => new RemoveServerMessage(bytes),
+            _ => throw new InvalidDataException($"Unexpected server-to-client message type {type}.")
+        };
+    }
+
+    public async Task<byte[]> ReceiveMessageBytesAsync()
+    {
         using var cts = new CancellationTokenSource(IoTimeout);
         var header = await ReceiveExactlyAsync(2, cts.Token);
         var type = (MessageType)header.ShortToHostOrder();
 
         return type switch
         {
-            MessageType.ServerInfo => new ServerInfoMessage(await ReceiveServerInfoMessageBytesAsync(header, cts.Token)),
-            MessageType.RemoveServer => new RemoveServerMessage(await ReceiveRemoveServerMessageBytesAsync(header, cts.Token)),
+            MessageType.ServerInfo => await ReceiveServerInfoMessageBytesAsync(header, cts.Token),
+            MessageType.RemoveServer => await ReceiveRemoveServerMessageBytesAsync(header, cts.Token),
             _ => throw new InvalidDataException($"Unexpected server-to-client message type {type}.")
         };
     }

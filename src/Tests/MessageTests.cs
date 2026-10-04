@@ -165,6 +165,25 @@ public sealed class MessageTests
     }
 
     [TestMethod]
+    public void ServerInfo_PreservesEveryEightBitNameByte()
+    {
+        var info = CreateServerInfo() with { ServerName = "S", MapName = "M" };
+
+        for (var value = 0x80; value <= 0xFF; value++)
+        {
+            var bytes = info.ToByteArray();
+            bytes[22] = (byte)value;
+            bytes[24] = (byte)value;
+
+            var parsed = new ServerInfo(bytes);
+            Assert.AreSequenceEqual(bytes, parsed.ToByteArray(), $"Name byte 0x{value:X2} changed.");
+
+            var messageBytes = new ServerInfoMessage(parsed, "127.0.0.1").ToByteArray();
+            Assert.AreSequenceEqual(messageBytes, new ServerInfoMessage(messageBytes).ToByteArray());
+        }
+    }
+
+    [TestMethod]
     public void SessionEnumerationQuery_UsesExpectedDirectPlayHeaderAndGameId()
     {
         var bytes = new SessionEnumerationQuery().ToByteArray();

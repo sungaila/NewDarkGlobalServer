@@ -1,8 +1,8 @@
 ﻿using Sungaila.NewDark.Core;
 using Sungaila.NewDark.Tests.Infrastructure;
+using System.Diagnostics.CodeAnalysis;
 using System.Net.WebSockets;
 using System.Text;
-using System.Diagnostics.CodeAnalysis;
 using System.Text.Json;
 using static Sungaila.NewDark.Core.Messages;
 
@@ -10,7 +10,7 @@ namespace Sungaila.NewDark.Tests;
 
 [TestClass]
 [DoNotParallelize]
-public sealed class GlobalServerSmokeTests
+public sealed partial class GlobalServerSmokeTests
 {
     private const ushort ProtocolVersion = 1100;
     private const string ServerName = "Loopback Server";

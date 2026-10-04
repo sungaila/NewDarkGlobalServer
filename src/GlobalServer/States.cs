@@ -45,6 +45,24 @@ namespace Sungaila.NewDark.GlobalServer
         /// </summary>
         public class Connection
         {
+            private static readonly TimeSpan EnumResponseLifetime = TimeSpan.FromSeconds(30);
+
+            private readonly Lock _stateLock = new();
+
+            private readonly TimeProvider _timeProvider;
+
+            private ConnectionStatus _status;
+
+            private DateTimeOffset _lastActivity;
+
+            private ServerInfo? _serverInfo;
+
+            private SessionEnumerationResponse? _lastEnumResponse;
+
+            private long _lastEnumResponseTimestamp;
+
+            private bool _disconnectStarted;
+
             /// <summary>
             /// The socket used for this connection.
             /// </summary>
@@ -63,7 +81,22 @@ namespace Sungaila.NewDark.GlobalServer
             /// <summary>
             /// The state in which this connection was last seen in.
             /// </summary>
-            public ConnectionStatus Status { get; set; }
+            public ConnectionStatus Status
+            {
+                get
+                {
+                    lock (_stateLock)
+                        return _status;
+                }
+                set
+                {
+                    lock (_stateLock)
+                    {
+                        if (!_disconnectStarted)
+                            _status = value;
+                    }
+                }
+            }
 
             /// <summary>
             /// The time at which this connection was created.
@@ -71,20 +104,105 @@ namespace Sungaila.NewDark.GlobalServer
             public DateTimeOffset Created { get; }
 
             /// <summary>
-            /// The last time <see cref="Socket.ReceiveAsync"/> had been called for this connection.
+            /// The time the last complete protocol message was received.
             /// </summary>
-            public DateTimeOffset LastActivity { get; set; }
+            public DateTimeOffset LastActivity
+            {
+                get
+                {
+                    lock (_stateLock)
+                        return _lastActivity;
+                }
+                set
+                {
+                    lock (_stateLock)
+                        _lastActivity = value;
+                }
+            }
 
             /// <summary>
             /// The last game server sent by this connection.
             /// This identifies it as a game server and <see cref="Status"/> should be set to <see cref="ConnectionStatus.AwaitServerCommand"/>.
             /// </summary>
-            public ServerInfo? ServerInfo { get; set; } = null;
+            public ServerInfo? ServerInfo
+            {
+                get
+                {
+                    lock (_stateLock)
+                        return _serverInfo;
+                }
+            }
 
             /// <summary>
-            /// The last Session Enumeration Response received (DirectPlay 8).
+            /// The last successful DirectPlay response, valid for at most 30 seconds.
             /// </summary>
-            public SessionEnumerationResponse? LastEnumResponse { get; set; } = null;
+            public SessionEnumerationResponse? LastEnumResponse
+            {
+                get
+                {
+                    lock (_stateLock)
+                        return GetEnumResponse();
+                }
+            }
+
+            private SessionEnumerationResponse? GetEnumResponse()
+            {
+                if (_lastEnumResponse != null &&
+                    _timeProvider.GetElapsedTime(_lastEnumResponseTimestamp) >= EnumResponseLifetime)
+                {
+                    _lastEnumResponse = null;
+                }
+
+                return _lastEnumResponse;
+            }
+
+            public bool TryGetServerSnapshot(out ServerInfo serverInfo, out SessionEnumerationResponse? enumResponse)
+            {
+                lock (_stateLock)
+                {
+                    serverInfo = default;
+                    enumResponse = null;
+
+                    if (_status != ConnectionStatus.AwaitServerCommand || _serverInfo is not { } info)
+                        return false;
+
+                    serverInfo = info;
+                    enumResponse = GetEnumResponse();
+                    return true;
+                }
+            }
+
+            public bool TryUpdateServerInfo(ServerInfo serverInfo, out ServerInfo? previousServerInfo)
+            {
+                lock (_stateLock)
+                {
+                    previousServerInfo = _serverInfo;
+
+                    if (_disconnectStarted)
+                        return false;
+
+                    if (_serverInfo is not { } previous || previous.Port != serverInfo.Port || previous.GameId != serverInfo.GameId)
+                        _lastEnumResponse = null;
+
+                    _serverInfo = serverInfo;
+                    _status = ConnectionStatus.AwaitServerCommand;
+                    return true;
+                }
+            }
+
+            public void SetEnumResponse(ServerInfo queriedServer, SessionEnumerationResponse? response)
+            {
+                lock (_stateLock)
+                {
+                    // A query that finishes after disconnect must not restore obsolete state.
+                    if (_disconnectStarted || _serverInfo is not { } current ||
+                        current.Port != queriedServer.Port || current.GameId != queriedServer.GameId)
+                        return;
+
+                    _lastEnumResponse = response;
+                    _lastEnumResponseTimestamp = _timeProvider.GetTimestamp();
+                }
+            }
 
             /// <summary>
             /// If this connection is closing or closed.
@@ -92,9 +210,10 @@ namespace Sungaila.NewDark.GlobalServer
             public bool IsDisconnected => Status is ConnectionStatus.Closed or ConnectionStatus.InvalidMessageType;
 
             /// <param name="socket">The socket of the accepted connection.</param>
+            /// <param name="timeProvider">The clock used to expire cached DirectPlay responses.</param>
             /// <exception cref="ArgumentNullException"/>
             /// <exception cref="ArgumentException">Thrown if <see cref="Socket.RemoteEndPoint"/> is <see langword="null"/> or not an <see cref="IPEndPoint"/>.</exception>
-            public Connection(Socket socket)
+            public Connection(Socket socket, TimeProvider? timeProvider = null)
             {
                 ArgumentNullException.ThrowIfNull(socket);
 
@@ -103,6 +222,7 @@ namespace Sungaila.NewDark.GlobalServer
 
                 Socket = socket;
                 InitialEndPoint = iPEndPoint;
+                _timeProvider = timeProvider ?? TimeProvider.System;
                 Status = ConnectionStatus.NewAndUnidentified;
                 Created = DateTimeOffset.Now;
                 LastActivity = Created;
@@ -125,12 +245,26 @@ namespace Sungaila.NewDark.GlobalServer
             /// </summary>
             public bool TryMarkAcceptedLogged() => Interlocked.Exchange(ref _acceptedLogged, 1) == 0;
 
-            private int _disconnectStarted;
-
             /// <summary>
             /// Attempts to mark this connection as disconnecting.
             /// </summary>
-            public bool TryBeginDisconnect() => Interlocked.Exchange(ref _disconnectStarted, 1) == 0;
+            public bool TryBeginDisconnect(out ServerInfo? serverInfo)
+            {
+                lock (_stateLock)
+                {
+                    serverInfo = null;
+
+                    if (_disconnectStarted)
+                        return false;
+
+                    _disconnectStarted = true;
+                    serverInfo = _serverInfo;
+                    _status = ConnectionStatus.Closed;
+                    _serverInfo = null;
+                    _lastEnumResponse = null;
+                    return true;
+                }
+            }
 
             /// <summary>
             /// A lock used to ensure that only one thread is sending data on this connection at a time.

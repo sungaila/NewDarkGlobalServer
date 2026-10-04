@@ -1,4 +1,5 @@
-﻿using System.Reflection;
+﻿using Sungaila.NewDark.Core;
+using System.Reflection;
 using static Sungaila.NewDark.Core.Messages;
 
 namespace Sungaila.NewDark.WebClient.Models
@@ -11,6 +12,8 @@ namespace Sungaila.NewDark.WebClient.Models
 
         public bool ShowDenied { get; set; } = true;
 
+        public GameTextEncoding NameEncoding { get; set; } = GameTextEncoding.Automatic;
+
         public string? StatusMessage { get; set; }
 
         public List<WebSocketServerInfo> Servers { get; } = [];
@@ -22,6 +25,11 @@ namespace Sungaila.NewDark.WebClient.Models
                 return Servers
                     .Where(s => ShowClosed || !s.Status.HasFlag(WebSocketServerStatus.Closed))
                     .Where(s => ShowDenied || !s.Status.HasFlag(WebSocketServerStatus.Denied))
+                    .Select(s => s with
+                    {
+                        ServerName = GameText.Decode(s.ServerName, NameEncoding),
+                        MapName = GameText.Decode(s.MapName, NameEncoding)
+                    })
                     .AsQueryable();
             }
         }
