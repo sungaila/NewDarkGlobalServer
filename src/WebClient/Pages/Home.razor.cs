@@ -12,6 +12,7 @@ namespace Sungaila.NewDark.WebClient.Pages
     public partial class Home
     {
         private static readonly TimeSpan _refreshInterval = TimeSpan.FromSeconds(1);
+        private static readonly TimeSpan _requestTimeout = TimeSpan.FromSeconds(15);
 
         private long? _lastRefreshTimestamp;
 
@@ -49,9 +50,10 @@ namespace Sungaila.NewDark.WebClient.Pages
 
             try
             {
-                await client.ConnectAsync(new Uri(Model.GlobalServerAddress), CancellationToken.None);
+                using var cts = new CancellationTokenSource(_requestTimeout);
+                await client.ConnectAsync(new Uri(Model.GlobalServerAddress), cts.Token);
 
-                var obj = await ReceiveServerListAsync(client);
+                var obj = await ReceiveServerListAsync(client, cts.Token);
 
                 Model.Servers.AddRange(obj);
 
@@ -84,7 +86,7 @@ namespace Sungaila.NewDark.WebClient.Pages
             _lastRefreshTimestamp = Stopwatch.GetTimestamp();
         }
 
-        private static async Task<List<WebSocketServerInfo>> ReceiveServerListAsync(ClientWebSocket client)
+        private static async Task<List<WebSocketServerInfo>> ReceiveServerListAsync(ClientWebSocket client, CancellationToken cancellationToken)
         {
             const int BufferSize = 4096;
 
@@ -93,7 +95,7 @@ namespace Sungaila.NewDark.WebClient.Pages
 
             while (true)
             {
-                var result = await client.ReceiveAsync(buffer.AsMemory(), CancellationToken.None);
+                var result = await client.ReceiveAsync(buffer.AsMemory(), cancellationToken);
 
                 if (result.MessageType == WebSocketMessageType.Close)
                 {

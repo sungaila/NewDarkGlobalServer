@@ -46,6 +46,10 @@ namespace Sungaila.NewDark.Core
             public byte[] ToByteArray();
         }
 
+        /// <summary>
+        /// Names hold opaque protocol bytes mapped one-to-one to Latin-1 characters, not decoded text.
+        /// This preserves both legacy codepages and UTF-8 within the 31-byte name limit.
+        /// </summary>
         public readonly record struct ServerInfo(ushort Port, GameStateFlags StateFlags, byte Reserved1, byte Reserved2, byte Reserved3, Guid GameId, string ServerName, string MapName) : ISerializableNetworkOrder
         {
             public ServerInfo(byte[] input) : this(default, default, default, default, default, default, string.Empty, string.Empty)
@@ -94,8 +98,10 @@ namespace Sungaila.NewDark.Core
                 byteList.AddRange(guidArray[6..8].Reverse());
                 byteList.AddRange(guidArray[8..16]);
 
-                byteList.AddRange(Encoding.ASCII.GetBytes(ServerName[..Math.Min(ServerName.Length, 31)] + '\0'));
-                byteList.AddRange(Encoding.ASCII.GetBytes(MapName[..Math.Min(MapName.Length, 31)] + '\0'));
+                // Keep names byte-for-byte, including UTF-8 and incomplete multibyte sequences.
+                // Each internal character represents one byte, so truncation uses the wire byte limit.
+                byteList.AddRange(Encoding.Latin1.GetBytes(ServerName[..Math.Min(ServerName.Length, 31)] + '\0'));
+                byteList.AddRange(Encoding.Latin1.GetBytes(MapName[..Math.Min(MapName.Length, 31)] + '\0'));
 
                 return [.. byteList];
             }
@@ -265,8 +271,8 @@ namespace Sungaila.NewDark.Core
                 var serverIpOffset =
                     2 + // MessageType
                     22 + // fixed ServerInfo fields
-                    Encoding.ASCII.GetByteCount(ServerInfo.ServerName) + 1 + // NUL
-                    Encoding.ASCII.GetByteCount(ServerInfo.MapName) + 1;     // NUL
+                    ServerInfo.ServerName.Length + 1 + // NUL
+                    ServerInfo.MapName.Length + 1;     // NUL
 
                 var (serverIp, _) = ReadNullTerminatedString(input, serverIpOffset, 16);
                 ServerIP = serverIp;
@@ -292,6 +298,10 @@ namespace Sungaila.NewDark.Core
             Denied = 1 << 2
         }
 
+        /// <summary>
+        /// Names retain the Latin-1 byte mapping from ServerInfo so each web client can select
+        /// the display encoding without changing game traffic or losing the original bytes.
+        /// </summary>
         public readonly record struct WebSocketServerInfo(string ServerName, string MapName, string Address, WebSocketServerStatus Status, uint? CurrentPlayers, uint? MaxPlayers)
         {
             [JsonIgnore]
@@ -453,7 +463,7 @@ namespace Sungaila.NewDark.Core
 
             var stringLength = nullTerminator - offset;
 
-            return (Encoding.ASCII.GetString(input, offset, stringLength), stringLength + 1);
+            return (Encoding.Latin1.GetString(input, offset, stringLength), stringLength + 1);
         }
     }
 }

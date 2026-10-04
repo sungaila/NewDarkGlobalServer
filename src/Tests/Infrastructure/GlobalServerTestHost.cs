@@ -28,7 +28,10 @@ internal sealed class GlobalServerTestHost : IAsyncDisposable
         TcpServer = host.Services.GetRequiredService<TcpGlobalServer>();
     }
 
-    public static async Task<GlobalServerTestHost> StartAsync(bool enableWebSocket = false)
+    public static async Task<GlobalServerTestHost> StartAsync(
+        bool enableWebSocket = false,
+        TimeProvider? clock = null,
+        TimeSpan? directPlayQueryTimeout = null)
     {
         var ports = ReserveFreeTcpPorts(enableWebSocket ? 2 : 1);
         var tcpPort = ports[0];
@@ -50,10 +53,11 @@ internal sealed class GlobalServerTestHost : IAsyncDisposable
             TimeSpan.FromSeconds(2),
             TimeSpan.FromSeconds(10),
             TimeSpan.FromSeconds(10),
-            TimeSpan.FromMilliseconds(25),
+            directPlayQueryTimeout ?? TimeSpan.FromMilliseconds(25),
             ShowHeartbeatMinimal: false,
             HideFailedConnections: true,
-            Verbose: false));
+            Verbose: false,
+            Clock: clock));
         builder.Services.AddSingleton<IHostedService>(sp => sp.GetRequiredService<TcpGlobalServer>());
 
         if (enableWebSocket)

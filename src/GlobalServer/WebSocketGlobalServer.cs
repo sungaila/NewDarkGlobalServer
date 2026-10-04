@@ -2,12 +2,10 @@
 using Microsoft.Extensions.Logging;
 using Sungaila.NewDark.Core;
 using System;
-using System.Collections.Generic;
 using System.Text.Json;
 using System.Threading;
 using System.Threading.Tasks;
 using WatsonWebsocket;
-using static Sungaila.NewDark.Core.Messages;
 
 namespace Sungaila.NewDark.GlobalServer
 {
@@ -35,41 +33,12 @@ namespace Sungaila.NewDark.GlobalServer
                 {
                     logger.LogInformation("Connection accepted (WebSocket) for {Client}", e.Client);
 
-                    var list = new List<WebSocketServerInfo>();
-
-                    foreach (var con in tcpGlobalServer.ServerConnections)
-                    {
-                        WebSocketServerStatus status = new();
-
-                        if (con.ServerInfo!.Value.StateFlags.HasFlag(GameStateFlags.Closed))
-                        {
-                            status |= WebSocketServerStatus.Closed;
-                        }
-
-                        if (con.LastEnumResponse == null)
-                        {
-                            status |= WebSocketServerStatus.Denied;
-                        }
-
-                        var maskedIp = con.InitialEndPoint.Address.MapToIPv4().ToString();
-                        var split = maskedIp.Split('.');
-                        maskedIp = string.Join('.', split[..^2]);
-                        maskedIp += ".***.***";
-
-                        list.Add(new WebSocketServerInfo(
-                            con.ServerInfo!.Value.ServerName,
-                            con.ServerInfo!.Value.MapName,
-                            maskedIp,
-                            status,
-                            con.LastEnumResponse?.CurrentPlayers,
-                            con.LastEnumResponse?.MaxPlayers));
-                    }
+                    var list = tcpGlobalServer.GetWebSocketServerList();
 
                     var message = JsonSerializer.Serialize(list, SourceGenerationContext.Default.ListWebSocketServerInfo);
                     await server.SendAsync(e.Client.Guid, message, token: applicationLifetime.ApplicationStopping);
 
                     await Task.Delay(TimeSpan.FromSeconds(10), applicationLifetime.ApplicationStopping);
-                    server.DisconnectClient(e.Client.Guid);
                 }
                 catch (OperationCanceledException) when (applicationLifetime.ApplicationStopping.IsCancellationRequested)
                 {
@@ -78,6 +47,18 @@ namespace Sungaila.NewDark.GlobalServer
                 catch (Exception ex)
                 {
                     logger.LogWarning(ex, "Failed handling WebSocket client {Client}", e.Client);
+                }
+                finally
+                {
+                    try
+                    {
+                        server.DisconnectClient(e.Client.Guid);
+                    }
+                    catch (Exception ex)
+                    {
+                        if (!applicationLifetime.ApplicationStopping.IsCancellationRequested)
+                            logger.LogWarning(ex, "Failed closing WebSocket client {Client}", e.Client);
+                    }
                 }
             };
 

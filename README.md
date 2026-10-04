@@ -9,6 +9,15 @@ A global server providing a game server list for [Thief 2](https://en.wikipedia.
 
 Also a web client to check for running game servers without opening the game: https://www.sungaila.de/NewDarkGlobalServer/
 
+Game and map names are relayed byte-for-byte, with a maximum of 31 bytes each. NewDark's global-server
+protocol does not identify the text encoding. The server uses a reversible Latin-1 byte mapping internally
+and in the WebSocket JSON; this is not the game's text encoding. Legacy codepages and UTF-8 are both preserved.
+
+The web client's **Names** selection controls display only. **Automatic** tries valid UTF-8 and otherwise
+uses DOS codepage 850. Select Windows-1251, Windows-1250, or another listed encoding
+if names look incorrect. Automatic detection is ambiguous for some legacy byte sequences. NewDark 1.29's
+UTF-8 rendering depends on the configured TTF/OTF fonts; installing NewDark alone does not convert older text.
+
 ## How to setup Thief 2 Multiplayer
 1. Get yourself a copy of the game (e.g. on [GOG.com](https://www.gog.com/de/game/thief_2_the_metal_age) or [Steam](https://store.steampowered.com/app/211740/Thief_II_The_Metal_Age/)).
 > [!WARNING]

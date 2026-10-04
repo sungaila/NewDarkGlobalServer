@@ -1,11 +1,24 @@
 ﻿@page "/"
 @using Microsoft.AspNetCore.Components.QuickGrid
+@using Sungaila.NewDark.Core
 
 <PageTitle>Thief 2 server list</PageTitle>
 
 <main class="game-screen">
-	<div style="display: grid; grid-template-columns: 1fr auto auto; gap: 5px; margin: 10% 12% 0% 10%; font-size: clamp(0px, 2vh, 2vw)">
+	<div style="display: grid; grid-template-columns: 1fr auto auto auto; gap: 5px; margin: 10% 12% 0% 10%; font-size: clamp(0px, 2vh, 2vw)">
 		<input @bind="Model.GlobalServerAddress" id="globalserveraddress" type="url" autocomplete="on" autocapitalize="off" spellcheck="false" placeholder="WebSocket address of the Global Server" required />
+
+		<div style="display: flex; align-items: center; gap: 5px;">
+			<label for="nameencoding" style="margin: 0;">Encoding:</label>
+			<select @bind="Model.NameEncoding" id="nameencoding" style="font: inherit;">
+				<option value="@GameTextEncoding.Automatic">Automatic</option>
+				<option value="@GameTextEncoding.Oem850">CP850</option>
+				<option value="@GameTextEncoding.Windows1250">Windows-1250</option>
+				<option value="@GameTextEncoding.Windows1251">Windows-1251</option>
+				<option value="@GameTextEncoding.Utf8">UTF-8</option>
+			</select>
+			<span title="Change this setting if the server and map names are displayed incorrectly. Different languages may use different encodings that cannot be detected automatically. Automatic will try UTF-8 first, then fall back to CP850.">🛈</span>
+		</div>
 
 		<div style="display: flex; align-items: center;">
 			<input @bind="Model.ShowClosed" id="showclosed" type="checkbox" />
