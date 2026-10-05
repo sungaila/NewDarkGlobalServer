@@ -4,7 +4,7 @@
     <TargetFramework>net10.0</TargetFramework>
     <AssemblyName>Core</AssemblyName>
     <RootNamespace>Sungaila.NewDark.Core</RootNamespace>
-		<IsTrimmable>true</IsTrimmable>
+		<IsAotCompatible>true</IsAotCompatible>
     <VersionPrefix>$(ProductVersion)</VersionPrefix>
     <VersionSuffix></VersionSuffix>
   </PropertyGroup>
